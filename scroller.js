@@ -8,7 +8,7 @@
 (function (factory) {
 
     if (typeof define === 'function' && define.amd) {
-        define(['jstween', 'exports'], function(JT, exports) {
+        define(['jstween', 'exports'], function (JT, exports) {
             window.Scroller = factory(exports, JT);
         });
     } else if (typeof exports !== 'undefined') {
@@ -123,7 +123,7 @@
             if (this.moveTimeout) clearTimeout(this.moveTimeout);
             this.moveTimeout = setTimeout(function () {
                 _self.dx = _self.dy = 0;
-            }, 10);
+            }, 50);
         },
 
         onTouchEnd: function () {
@@ -147,7 +147,7 @@
                 this.dy = calcNum(this.y1, this.dy, this.yMax, this.yMin);
             }
 
-            if (Math.abs(this.dx) > 0.1 || Math.abs(this.dy) > 0.1) {
+            if (this.x1 > this.xMax + 0.1 || this.x1 < this.xMin - 0.1 || this.y1 > this.yMax + 0.1 || this.y1 < this.yMin - 0.1 || Math.abs(this.dx) > 0.1 || Math.abs(this.dy) > 0.1) {
                 this.easeTimeout = setTimeout(function () {
                     _self.easeTo();
                 }, 1000 / 60);
