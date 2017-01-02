@@ -1,5 +1,5 @@
 # components
-
+此组件库只适用于移动端，所有案例也请在浏览器移动模拟器下查看。  
 
 gesturer.js  
 只是对AlloyFinger做了符合个人习惯的修改封装，  
