@@ -7,9 +7,14 @@ gesturer.js
 
 
 scroller.js  
-滚动组件
-
+滚动组件  
+http://shrek.imdevsh.com/demo/components/scroller.html  
 
 swiper.js  
-广告栏组件
+滑屏组件  
+http://shrek.imdevsh.com/demo/components/swiper.html  
 
+
+imgeditor.js  
+图片编辑组件  
+http://shrek.imdevsh.com/demo/components/imgeditor.html  
