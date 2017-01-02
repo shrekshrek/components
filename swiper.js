@@ -37,6 +37,12 @@
             this.pageMax = config.pageMax || (this.isX ? Math.round(this.w1 / this.w0) : Math.round(this.h1 / this.h0));
         },
 
+        size: function(rect){
+            JT.set(this.el, {width: rect.width});
+            JT.set(this.el, {height: rect.height});
+            this.update();
+        },
+
         reset: function () {
             if (this.isX) {
                 this.x1 = 0;
@@ -63,10 +69,6 @@
                 this.yMax = Math.max(this.h0 - this.h1, 0);
                 this.yMin = Math.min(this.h0 - this.h1, 0);
             }
-        },
-
-        destroy: function () {
-            // this.gesture.destroy();
         },
 
         onTouchStart: function () {

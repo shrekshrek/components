@@ -60,20 +60,34 @@
             this.pinchStartLen = null;
             this.scale = 1;
             this.isDoubleTap = false;
-            this.rotate = config.rotate || function () {};
-            this.onTouchStart = config.onTouchStart || function () {};
-            this.onMultipointStart = config.onMultipointStart || function () {};
-            this.onMultipointEnd = config.onMultipointEnd || function () {};
-            this.onPinch = config.onPinch || function () {};
-            this.onSwipe = config.onSwipe || function () {};
-            this.onTap = config.onTap || function () {};
-            this.onDoubleTap = config.onDoubleTap || function () {};
-            this.onLongTap = config.onLongTap || function () {};
-            this.onSingleTap = config.onSingleTap || function () {};
-            this.onPressMove = config.onPressMove || function () {};
-            this.onTouchMove = config.onTouchMove || function () {};
-            this.onTouchEnd = config.onTouchEnd || function () {};
-            this.onTouchCancel = config.onTouchCancel || function () {};
+            this.onRotate = config.onRotate || function () {
+                };
+            this.onTouchStart = config.onTouchStart || function () {
+                };
+            this.onMultipointStart = config.onMultipointStart || function () {
+                };
+            this.onMultipointEnd = config.onMultipointEnd || function () {
+                };
+            this.onPinch = config.onPinch || function () {
+                };
+            this.onSwipe = config.onSwipe || function () {
+                };
+            this.onTap = config.onTap || function () {
+                };
+            this.onDoubleTap = config.onDoubleTap || function () {
+                };
+            this.onLongTap = config.onLongTap || function () {
+                };
+            this.onSingleTap = config.onSingleTap || function () {
+                };
+            this.onPressMove = config.onPressMove || function () {
+                };
+            this.onTouchMove = config.onTouchMove || function () {
+                };
+            this.onTouchEnd = config.onTouchEnd || function () {
+                };
+            this.onTouchCancel = config.onTouchCancel || function () {
+                };
 
             this.delta = null;
             this.last = null;
@@ -129,7 +143,7 @@
                 var v = {x: evt.touches[1].pageX - this.x1, y: evt.touches[1].pageY - this.y1};
                 preV.x = v.x;
                 preV.y = v.y;
-                this.pinchStartLen = getLen(preV);
+                this.pinchStartLen = this.pinchLen = getLen(preV);
                 this.onMultipointStart(evt);
             }
             this.longTapTimeout = setTimeout(function () {
@@ -149,12 +163,15 @@
 
                 if (preV.x !== null) {
                     if (this.pinchStartLen > 0) {
-                        evt.scale = getLen(v) / this.pinchStartLen;
+                        var _len = getLen(v);
+                        evt.scale = _len / this.pinchStartLen;
+                        evt.deltaLen = _len - this.pinchLen;
+                        this.pinchLen = _len;
                         this.onPinch(evt);
                     }
 
                     evt.angle = getRotateAngle(v, preV);
-                    this.rotate(evt);
+                    this.onRotate(evt);
                 }
                 preV.x = v.x;
                 preV.y = v.y;
