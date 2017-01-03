@@ -53,6 +53,7 @@
             var _self = this;
             this.editImg.src = img;
             this.editImg.onload = function () {
+                _self.editData.s = Math.max(_self.width / this.width, _self.height / this.height);
                 _self.update();
             };
         },
@@ -62,7 +63,6 @@
         },
 
         update: function () {
-            var _s = Math.max(this.width / this.editImg.width, this.height / this.editImg.height);
             this.ctx.clearRect(0, 0, this.width, this.height);
             if (this.color) {
                 this.ctx.fillStyle = this.color;
@@ -71,8 +71,8 @@
             this.ctx.save();
             this.ctx.translate(this.editData.x, this.editData.y);
             this.ctx.rotate(this.editData.r * Math.PI / 180);
-            this.ctx.scale(_s, _s);
-            this.ctx.drawImage(this.editImg, -this.editImg.width * this.editData.s / 2, -this.editImg.height * this.editData.s / 2, this.editImg.width * this.editData.s, this.editImg.height * this.editData.s);
+            this.ctx.scale(this.editData.s, this.editData.s);
+            this.ctx.drawImage(this.editImg, -this.editImg.width / 2, -this.editImg.height / 2, this.editImg.width, this.editImg.height);
             this.ctx.restore();
         },
 
