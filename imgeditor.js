@@ -27,6 +27,8 @@
         initialize: function (config) {
             this.el = config.el || document.createElement('canvas');
             this.color = config.color;
+            this.type = config.type || 'jpeg';
+            this.quality = config.quality || 0.7;
 
             this.editImg = new Image();
 
@@ -59,7 +61,7 @@
         },
 
         getImg: function () {
-            return this.cvs.toDataURL('image/jpeg', this.quality);
+            return this.el.toDataURL(this.type, this.quality);
         },
 
         update: function () {
