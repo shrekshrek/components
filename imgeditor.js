@@ -25,17 +25,23 @@
 
     ImgEditor.prototype = {
         initialize: function (config) {
+            var _self = this;
             this.el = config.el || document.createElement('canvas');
             this.color = config.color;
             this.type = config.type || 'jpeg';
             this.quality = config.quality || 0.7;
 
-            this.editImg = new Image();
-
             this.ctx = this.el.getContext('2d');
             this.width = this.el.width;
             this.height = this.el.height;
             this.editData = {x: this.width / 2, y: this.height / 2, r: 0, s: 1};
+
+            this.editImg = new Image();
+            this.editImg.onload = function () {
+                _self.editData.s = Math.max(_self.width / this.width, _self.height / this.height);
+                _self.update();
+            };
+
         },
 
         size: function (rect) {
@@ -51,13 +57,8 @@
             this.ctx.clearRect(0, 0, this.width, this.height);
         },
 
-        setImg: function (img) {
-            var _self = this;
-            this.editImg.src = img;
-            this.editImg.onload = function () {
-                _self.editData.s = Math.max(_self.width / this.width, _self.height / this.height);
-                _self.update();
-            };
+        setImg: function (src) {
+            this.editImg.src = src;
         },
 
         getImg: function () {
