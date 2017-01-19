@@ -26,7 +26,7 @@
     ImgEditor.prototype = {
         initialize: function (config) {
             var _self = this;
-            this.el = config.el || document.createElement('canvas');
+            this.el = config.el;
             this.color = config.color;
             this.type = config.type || 'jpeg';
             this.quality = config.quality || 0.7;
