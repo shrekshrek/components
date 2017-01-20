@@ -47,8 +47,8 @@
         size: function (rect) {
             this.width = rect.width;
             this.height = rect.height;
-            JT.set(this.el, {width: this.width});
-            JT.set(this.el, {height: this.height});
+            this.el.width = this.width;
+            this.el.height = this.height;
             this.reset();
         },
 
