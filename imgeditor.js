@@ -32,6 +32,7 @@
             this.quality = config.quality || 0.7;
 
             this.ctx = this.el.getContext('2d');
+            this.ctx.imageSmoothingEnabled = true;
             this.width = this.el.width;
             this.height = this.el.height;
             this.editData = {x: this.width / 2, y: this.height / 2, r: 0, s: 1};
