@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>text input</title>
+    <meta name="description" content=""/>
+    <meta name="viewport" content="width=640, target-densitydpi=device-dpi, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+    <script src="../former.js"></script>
+
+    <style>
+    </style>
+</head>
+
+<body>
+
+<script>
+    var text = new Former.TextInput({limitLength: 6, width: 300, height:60, top:100, fontSize:20, background:'#ccc'});
+    document.querySelector('body').appendChild(text.el);
+
+</script>
+
+</body>
+</html>
