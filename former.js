@@ -146,17 +146,19 @@
         constructor: DateInput,
     });
 
-    // -------------------------------------------------------------------
+    // -------------------------------------------------------------------select下拉选单
     var Select = function () {
 
     };
+
+    // -------------------------------------------------------------------
+
 
     Former.TextInput = TextInput;
     Former.MobileInput = MobileInput;
     Former.EmailInput = EmailInput;
     Former.PasswordInput = PasswordInput;
     Former.DateInput = DateInput;
-
     Former.Select = Select;
 
     return Former;
