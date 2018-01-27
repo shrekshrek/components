@@ -26,17 +26,11 @@
     var BaseInput = function (params) {
         this.el = params.el || document.createElement('input');
 
-        this.el.style.position = params.position || 'absolute';
-        this.el.style.border = (params.border || 0) + 'px';
-        this.el.style.background = params.background || 'transparent';
+        this.el.style.position = 'absolute';
+        this.el.style.border = '0px';
+        this.el.style.background = 'transparent';
 
-        if (params.name) this.el.name = params.name;
-        if (params.maxLength) this.el.maxLength = params.maxLength;
-        if (params.left) this.el.style.left = params.left + 'px';
-        if (params.top) this.el.style.top = params.top + 'px';
-        if (params.width) this.el.style.width = params.width + 'px';
-        if (params.height) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
-        if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
+        this.set(params);
 
         this.reg = /\S/;
     };
@@ -44,7 +38,25 @@
     Object.assign(BaseInput.prototype, {
         check: function () {
             return this.reg.test(this.el.value);
-        }
+        },
+
+        set: function (params) {
+            if (params.position) this.el.style.position = params.position;
+            if (params.border) this.el.style.border = params.border;
+            if (params.background) this.el.style.background = params.background;
+            if (params.name) this.el.name = params.name;
+            if (params.maxLength) this.el.maxLength = params.maxLength;
+            if (params.left) this.el.style.left = params.left + 'px';
+            if (params.top) this.el.style.top = params.top + 'px';
+            if (params.width) this.el.style.width = params.width + 'px';
+            if (params.height) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
+            if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
+        },
+
+        value: function () {
+            return this.el.value;
+        },
+
     });
 
     // -------------------------------------------------------------------text普通文本输入框
@@ -54,27 +66,33 @@
         BaseInput.call(this, params);
         this.el.type = 'text';
 
-        if (params.limitLength) {
+        if (params.limitLength) this.limitLength = params.limitLength;
+        if (params.language) this.language = params.language;
+
+        if (this.limitLength || this.language) {
             var _self = this;
-            this.limitLength = params.limitLength;
-            this.el.addEventListener('input', function () {
-                _self.checkLimit();
+            this.el.addEventListener('change', function () {
+                if (_self.language) _self.checkLanguage();
+                if (_self.limitLength) _self.checkLimit();
             });
         }
-
-        // switch(params.lang){
-        //     case 'cn':
-        //         break;
-        //     case 'en':
-        //         break;
-        //     case 'cen':
-        //         break;
-        // }
 
     };
 
     TextInput.prototype = Object.assign(Object.create(BaseInput.prototype), {
         constructor: TextInput,
+
+        checkLanguage: function () {
+            switch (this.language) {
+                case 'cn':
+                    // console.log(this.el.value.replace(/[^\u4e00-\u9fa5]/ig, ''));
+                    this.el.value = this.el.value.replace(/[^\u4e00-\u9fa5]/ig, '');
+                    break;
+                case 'en':
+                    this.el.value = this.el.value.replace(/[^A-Za-z0-9]/ig, '');
+                    break;
+            }
+        },
 
         checkLength: function () {
             var _result = this.el.value.match(/[^\x00-\xff]/ig);
@@ -147,9 +165,52 @@
     });
 
     // -------------------------------------------------------------------select下拉选单
-    var Select = function () {
+    var ComboBox = function (params) {
+        this.el = params.el || document.createElement('select');
 
+        this.el.style.position = 'absolute';
+        this.el.style.border = '0px';
+        this.el.style.background = 'transparent';
+
+        var _self = this;
+        this.el.addEventListener('change', function (evt) {
+            _self.onChange(evt);
+        });
+
+        this.set(params);
     };
+
+    Object.assign(ComboBox.prototype, {
+        set: function (params) {
+            if (params.position) this.el.style.position = params.position;
+            if (params.border) this.el.style.border = params.border;
+            if (params.background) this.el.style.background = params.background;
+            if (params.name) this.el.name = params.name;
+            if (params.left) this.el.style.left = params.left + 'px';
+            if (params.top) this.el.style.top = params.top + 'px';
+            if (params.width) this.el.style.width = params.width + 'px';
+            if (params.height) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
+            if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
+            if (params.onChange) this.onChange = params.onChange;
+
+            if (params.data) {
+                var _html = '';
+                for (var i = 0, l = params.data.length; i < l; i++) {
+                    _html += '<option value ="' + params.data[i] + '">' + params.data[i] + '</option>';
+                }
+                this.el.innerHTML = _html;
+            }
+        },
+
+        value: function () {
+            return this.el.value;
+        },
+
+        onChange: function () {
+
+        },
+    });
+
 
     // -------------------------------------------------------------------
 
@@ -159,7 +220,7 @@
     Former.EmailInput = EmailInput;
     Former.PasswordInput = PasswordInput;
     Former.DateInput = DateInput;
-    Former.Select = Select;
+    Former.ComboBox = ComboBox;
 
     return Former;
 }));

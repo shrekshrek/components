@@ -17,8 +17,28 @@
 <body>
 
 <script>
-    var text = new Former.TextInput({limitLength: 6, width: 300, height:60, top:100, fontSize:20, background:'#ccc'});
+    var text = new Former.TextInput({
+        // language: 'en',
+        limitLength: 6,
+        width: 300,
+        height: 60,
+        fontSize: 20,
+        background: '#ccc'
+    });
     document.querySelector('body').appendChild(text.el);
+
+    var combo = new Former.ComboBox({
+        data: ['选项1', '选项2', '选项3', '选项4', '选项5'],
+        width: 300,
+        height: 60,
+        top: 80,
+        fontSize: 20,
+        background: '#ccc',
+        onChange: function (evt) {
+            console.log(this.value());
+        }
+    });
+    document.querySelector('body').appendChild(combo.el);
 
 </script>
 
