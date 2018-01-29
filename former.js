@@ -28,6 +28,8 @@
 
         this.el.style.position = 'absolute';
         this.el.style.border = '0px';
+        this.el.style.margin = '0px';
+        this.el.style.padding = '0px';
         this.el.style.background = 'transparent';
 
         this.set(params);
@@ -41,18 +43,19 @@
         },
 
         set: function (params) {
-            if (params.id) this.el.id = params.id;
-            if (params.class) this.el.className = params.class;
-            if (params.position) this.el.style.position = params.position;
-            if (params.border) this.el.style.border = params.border;
-            if (params.background) this.el.style.background = params.background;
-            if (params.name) this.el.name = params.name;
-            if (params.maxLength) this.el.maxLength = params.maxLength;
-            if (params.left) this.el.style.left = params.left + 'px';
-            if (params.top) this.el.style.top = params.top + 'px';
-            if (params.width) this.el.style.width = params.width + 'px';
-            if (params.height) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
-            if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
+            if (params.id !== undefined) this.el.id = params.id;
+            if (params.class !== undefined) this.el.className = params.class;
+            if (params.name !== undefined) this.el.name = params.name;
+
+            if (params.position !== undefined) this.el.style.position = params.position;
+            if (params.left !== undefined) this.el.style.left = params.left + 'px';
+            if (params.top !== undefined) this.el.style.top = params.top + 'px';
+            if (params.border !== undefined) this.el.style.border = params.border;
+            if (params.background !== undefined) this.el.style.background = params.background;
+            if (params.width !== undefined) this.el.style.width = params.width + 'px';
+            if (params.height !== undefined) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
+            if (params.fontSize !== undefined) this.el.style.fontSize = params.fontSize + 'px';
+            if (params.maxLength !== undefined) this.el.maxLength = params.maxLength;
         },
 
         value: function () {
@@ -68,8 +71,8 @@
         BaseInput.call(this, params);
         this.el.type = 'text';
 
-        if (params.limitLength) this.limitLength = params.limitLength;
-        if (params.language) this.language = params.language;
+        if (params.limitLength !== undefined) this.limitLength = params.limitLength;
+        if (params.language !== undefined) this.language = params.language;
 
         if (this.limitLength || this.language) {
             var _self = this;
@@ -197,19 +200,19 @@
 
     Object.assign(ComboBox.prototype, {
         set: function (params) {
-            if (params.id) this.el.id = params.id;
-            if (params.class) this.el.className = params.class;
+            if (params.id !== undefined) this.el.id = params.id;
+            if (params.class !== undefined) this.el.className = params.class;
 
-            if (params.position) this.el.style.position = params.position;
-            if (params.left) this.el.style.left = params.left + 'px';
-            if (params.top) this.el.style.top = params.top + 'px';
-            if (params.border) this.textEl.style.border = params.border;
-            if (params.background) this.textEl.style.background = params.background;
-            if (params.width) this.textEl.style.width = this.selectEl.style.width = params.width + 'px';
-            if (params.height) this.textEl.style.height = this.el.style.lineHeight = this.selectEl.style.height = params.height + 'px';
+            if (params.position !== undefined) this.el.style.position = params.position;
+            if (params.left !== undefined) this.el.style.left = params.left + 'px';
+            if (params.top !== undefined) this.el.style.top = params.top + 'px';
+            if (params.border !== undefined) this.textEl.style.border = params.border;
+            if (params.background !== undefined) this.textEl.style.background = params.background;
+            if (params.width !== undefined) this.textEl.style.width = this.selectEl.style.width = params.width + 'px';
+            if (params.height !== undefined) this.textEl.style.height = this.el.style.lineHeight = this.selectEl.style.height = params.height + 'px';
 
-            if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
-            if (params.onChange) this.onChange = params.onChange;
+            if (params.fontSize !== undefined) this.el.style.fontSize = params.fontSize + 'px';
+            if (params.onChange !== undefined) this.onChange = params.onChange;
 
             this.selectEl.style.opacity = 0;
 
