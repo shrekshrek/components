@@ -27,11 +27,29 @@
     });
     document.querySelector('body').appendChild(text.el);
 
+    var text2 = new Former.MobileInput({
+        width: 300,
+        height: 60,
+        top: 80,
+        fontSize: 20,
+        background: '#ccc'
+    });
+    document.querySelector('body').appendChild(text2.el);
+
+    var text3 = new Former.EmailInput({
+        width: 300,
+        height: 60,
+        top: 160,
+        fontSize: 20,
+        background: '#ccc'
+    });
+    document.querySelector('body').appendChild(text3.el);
+
     var combo = new Former.ComboBox({
         data: ['选项1', '选项2', '选项3', '选项4', '选项5'],
         width: 300,
         height: 60,
-        top: 80,
+        top: 240,
         fontSize: 20,
         background: '#ccc',
         onChange: function (evt) {

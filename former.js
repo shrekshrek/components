@@ -41,6 +41,8 @@
         },
 
         set: function (params) {
+            if (params.id) this.el.id = params.id;
+            if (params.class) this.el.className = params.class;
             if (params.position) this.el.style.position = params.position;
             if (params.border) this.el.style.border = params.border;
             if (params.background) this.el.style.background = params.background;
@@ -182,6 +184,8 @@
 
     Object.assign(ComboBox.prototype, {
         set: function (params) {
+            if (params.id) this.el.id = params.id;
+            if (params.class) this.el.className = params.class;
             if (params.position) this.el.style.position = params.position;
             if (params.border) this.el.style.border = params.border;
             if (params.background) this.el.style.background = params.background;
