@@ -168,14 +168,27 @@
 
     // -------------------------------------------------------------------select下拉选单
     var ComboBox = function (params) {
-        this.el = params.el || document.createElement('select');
-
+        this.el = params.el || document.createElement('div');
         this.el.style.position = 'absolute';
-        this.el.style.border = '0px';
         this.el.style.background = 'transparent';
 
+        this.textEl = document.createElement('div');
+        this.textEl.style.position = 'absolute';
+        this.textEl.style.border = '0px';
+        this.textEl.style.left = '0px';
+        this.textEl.style.top = '0px';
+        this.textEl.style.background = 'transparent';
+        this.el.appendChild(this.textEl);
+
+        this.selectEl = document.createElement('select');
+        this.selectEl.style.position = 'absolute';
+        this.selectEl.style.left = '0px';
+        this.selectEl.style.top = '0px';
+        this.el.appendChild(this.selectEl);
+
         var _self = this;
-        this.el.addEventListener('change', function (evt) {
+        this.selectEl.addEventListener('change', function (evt) {
+            _self.textEl.innerText = _self.selectEl.value;
             _self.onChange(evt);
         });
 
@@ -186,28 +199,31 @@
         set: function (params) {
             if (params.id) this.el.id = params.id;
             if (params.class) this.el.className = params.class;
+
             if (params.position) this.el.style.position = params.position;
-            if (params.border) this.el.style.border = params.border;
-            if (params.background) this.el.style.background = params.background;
-            if (params.name) this.el.name = params.name;
             if (params.left) this.el.style.left = params.left + 'px';
             if (params.top) this.el.style.top = params.top + 'px';
-            if (params.width) this.el.style.width = params.width + 'px';
-            if (params.height) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
+            if (params.border) this.textEl.style.border = params.border;
+            if (params.background) this.textEl.style.background = params.background;
+            if (params.width) this.textEl.style.width = this.selectEl.style.width = params.width + 'px';
+            if (params.height) this.textEl.style.height = this.el.style.lineHeight = this.selectEl.style.height = params.height + 'px';
+
             if (params.fontSize) this.el.style.fontSize = params.fontSize + 'px';
             if (params.onChange) this.onChange = params.onChange;
+
+            this.selectEl.style.opacity = 0;
 
             if (params.data) {
                 var _html = '';
                 for (var i = 0, l = params.data.length; i < l; i++) {
                     _html += '<option value ="' + params.data[i] + '">' + params.data[i] + '</option>';
                 }
-                this.el.innerHTML = _html;
+                this.selectEl.innerHTML = _html;
             }
         },
 
         value: function () {
-            return this.el.value;
+            return this.selectEl.value;
         },
 
         onChange: function () {
