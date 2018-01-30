@@ -26,10 +26,10 @@
     var BaseInput = function (params) {
         this.el = params.el || document.createElement('input');
 
-        this.el.style.position = 'absolute';
-        this.el.style.border = '0px';
         this.el.style.margin = '0px';
         this.el.style.padding = '0px';
+        this.el.style.position = 'absolute';
+        this.el.style.border = '0px';
         this.el.style.background = 'transparent';
 
         this.set(params);
@@ -175,7 +175,9 @@
         this.el.style.position = 'absolute';
         this.el.style.background = 'transparent';
 
-        this.textEl = document.createElement('div');
+        this.textEl = document.createElement('p');
+        this.textEl.style.margin = '0px';
+        this.textEl.style.padding = '0px';
         this.textEl.style.position = 'absolute';
         this.textEl.style.border = '0px';
         this.textEl.style.left = '0px';
