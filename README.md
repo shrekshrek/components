@@ -25,3 +25,5 @@ http://shrek.imdevsh.com/demo/components/imgeditor.html
 former.js  
 信息提交组件集，包括文本，电话，日期输入框，下拉选择菜单等子组件  
 http://shrek.imdevsh.com/demo/components/former.html  
+
+
