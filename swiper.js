@@ -1,8 +1,5 @@
 /*!
- * VERSION: 0.1.0
- * DATE: 2016-7-7
  * GIT: https://github.com/shrekshrek/components
- * @author: Shrek.wang
  **/
 
 (function (factory) {
