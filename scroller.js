@@ -1,8 +1,5 @@
 /*!
- * VERSION: 0.1.0
- * DATE: 2016-7-7
  * GIT: https://github.com/shrekshrek/components
- * @author: Shrek.wang
  **/
 
 (function (factory) {
@@ -35,24 +32,22 @@
         return dn;
     }
 
-    Scroller = function () {
-        this.initialize.apply(this, arguments);
+    Scroller = function (config) {
+        this.el = config.el;
+        this.drag = config.drag || this.el.querySelector('.contain');
+        this.bar = config.bar;
+        this.barDrag = this.bar ? this.bar.children[0] : undefined;
+        this.isX = config.isX || false;
+        this.isY = config.isY || true;
+
+        this.init();
     };
 
-    Scroller.prototype = {
-        initialize: function (config) {
-            this.el = config.el;
-            this.drag = config.drag || this.el.querySelector('.contain');
-            this.isX = config.isX == undefined ? false : config.isX;
-            this.isY = config.isY == undefined ? true : config.isY;
-
-            this.update();
-        },
-
+    Object.assign(Scroller.prototype, {
         size: function (rect) {
             JT.set(this.el, {width: rect.width});
             JT.set(this.el, {height: rect.height});
-            this.update();
+            this.init();
         },
 
         reset: function () {
@@ -70,7 +65,7 @@
             JT.set(this.drag, {y: this.y1});
         },
 
-        update: function () {
+        init: function () {
             if (this.isX) {
                 this.dx = 0;
                 this.x1 = JT.get(this.drag, 'x');
@@ -78,6 +73,10 @@
                 this.w1 = parseFloat(JT.get(this.drag, 'width'));
                 this.xMax = Math.max(this.w0 - this.w1, 0);
                 this.xMin = Math.min(this.w0 - this.w1, 0);
+
+                this.h3 = parseFloat(JT.get(this.bar, 'width'));
+                this.h4 = this.h0 / this.h1 * this.h3;
+                JT.set(this.barDrag, {width: this.h4});
             }
 
             if (this.isY) {
@@ -87,6 +86,28 @@
                 this.h1 = parseFloat(JT.get(this.drag, 'height'));
                 this.yMax = Math.max(this.h0 - this.h1, 0);
                 this.yMin = Math.min(this.h0 - this.h1, 0);
+
+                this.h3 = parseFloat(JT.get(this.bar, 'height'));
+                this.h4 = this.h0 / this.h1 * this.h3;
+                JT.set(this.barDrag, {height: this.h4});
+            }
+        },
+
+        update: function (num) {
+            if (this.isX) {
+                JT.set(this.drag, {x: num});
+                if (this.barDrag) {
+                    var _x = num / (this.h1 - this.h0) * (this.h4 - this.h3);
+                    JT.set(this.barDrag, {x: _x});
+                }
+            }
+
+            if (this.isY) {
+                JT.set(this.drag, {y: num});
+                if (this.barDrag) {
+                    var _y = num / (this.h1 - this.h0) * (this.h4 - this.h3);
+                    JT.set(this.barDrag, {y: _y});
+                }
             }
         },
 
@@ -106,7 +127,8 @@
                 } else {
                     this.x1 += evt.deltaX;
                 }
-                JT.set(this.drag, {x: this.x1});
+                // JT.set(this.drag, {x: this.x1});
+                this.update(this.x1);
                 this.dx = evt.deltaX;
             }
 
@@ -116,7 +138,8 @@
                 } else {
                     this.y1 += evt.deltaY;
                 }
-                JT.set(this.drag, {y: this.y1});
+                // JT.set(this.drag, {y: this.y1});
+                this.update(this.y1);
                 this.dy = evt.deltaY;
             }
 
@@ -137,13 +160,15 @@
 
             if (this.isX) {
                 this.x1 += this.dx;
-                JT.set(this.drag, {x: this.x1});
+                // JT.set(this.drag, {x: this.x1});
+                this.update(this.x1);
                 this.dx = calcNum(this.x1, this.dx, this.xMax, this.xMin);
             }
 
             if (this.isY) {
                 this.y1 += this.dy;
-                JT.set(this.drag, {y: this.y1});
+                // JT.set(this.drag, {y: this.y1});
+                this.update(this.y1);
                 this.dy = calcNum(this.y1, this.dy, this.yMax, this.yMin);
             }
 
@@ -154,8 +179,8 @@
             }
         },
 
-
-    };
+    });
 
     return Scroller;
+
 }));

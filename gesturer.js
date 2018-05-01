@@ -1,8 +1,5 @@
 /*!
- * VERSION: 0.1.0
- * DATE: 2016-7-7
  * GIT: https://github.com/shrekshrek/components
- * @author: Shrek.wang
  **/
 
 (function (factory) {
@@ -48,61 +45,50 @@
         return angle * 180 / Math.PI;
     }
 
-    Gesturer = function () {
-        this.initialize.apply(this, arguments);
+    Gesturer = function (config) {
+        this.el = config.el;
+
+        var empty = function () {
+        };
+
+        this.preV = {x: null, y: null};
+        this.pinchStartLen = null;
+        this.scale = 1;
+        this.isDoubleTap = false;
+        this.onRotate = config.onRotate || empty;
+        this.onTouchStart = config.onTouchStart || empty;
+        this.onMultipointStart = config.onMultipointStart || empty;
+        this.onMultipointEnd = config.onMultipointEnd || empty;
+        this.onPinch = config.onPinch || empty;
+        this.onSwipe = config.onSwipe || empty;
+        this.onTap = config.onTap || empty;
+        this.onDoubleTap = config.onDoubleTap || empty;
+        this.onLongTap = config.onLongTap || empty;
+        this.onSingleTap = config.onSingleTap || empty;
+        this.onPressMove = config.onPressMove || empty;
+        this.onTouchMove = config.onTouchMove || empty;
+        this.onTouchEnd = config.onTouchEnd || empty;
+        this.onTouchCancel = config.onTouchCancel || empty;
+
+        this.delta = null;
+        this.last = null;
+        this.now = null;
+        this.tapTimeout = null;
+        this.touchTimeout = null;
+        this.longTapTimeout = null;
+        this.swipeTimeout = null;
+        this.x1 = this.x2 = this.y1 = this.y2 = null;
+        this.preTapPosition = {x: null, y: null};
+
+        this._touchStart = this._touchStart.bind(this);
+        this._touchMove = this._touchMove.bind(this);
+        this._touchEnd = this._touchEnd.bind(this);
+        this._touchCancel = this._touchCancel.bind(this);
     };
 
-    Gesturer.prototype = {
+    Object.assign(Gesturer.prototype, {
         initialize: function (config) {
-            this.el = config.el;
 
-            this.preV = {x: null, y: null};
-            this.pinchStartLen = null;
-            this.scale = 1;
-            this.isDoubleTap = false;
-            this.onRotate = config.onRotate || function () {
-                };
-            this.onTouchStart = config.onTouchStart || function () {
-                };
-            this.onMultipointStart = config.onMultipointStart || function () {
-                };
-            this.onMultipointEnd = config.onMultipointEnd || function () {
-                };
-            this.onPinch = config.onPinch || function () {
-                };
-            this.onSwipe = config.onSwipe || function () {
-                };
-            this.onTap = config.onTap || function () {
-                };
-            this.onDoubleTap = config.onDoubleTap || function () {
-                };
-            this.onLongTap = config.onLongTap || function () {
-                };
-            this.onSingleTap = config.onSingleTap || function () {
-                };
-            this.onPressMove = config.onPressMove || function () {
-                };
-            this.onTouchMove = config.onTouchMove || function () {
-                };
-            this.onTouchEnd = config.onTouchEnd || function () {
-                };
-            this.onTouchCancel = config.onTouchCancel || function () {
-                };
-
-            this.delta = null;
-            this.last = null;
-            this.now = null;
-            this.tapTimeout = null;
-            this.touchTimeout = null;
-            this.longTapTimeout = null;
-            this.swipeTimeout = null;
-            this.x1 = this.x2 = this.y1 = this.y2 = null;
-            this.preTapPosition = {x: null, y: null};
-
-            this._touchStart = this._touchStart.bind(this);
-            this._touchMove = this._touchMove.bind(this);
-            this._touchEnd = this._touchEnd.bind(this);
-            this._touchCancel = this._touchCancel.bind(this);
         },
 
         on: function () {
@@ -124,7 +110,7 @@
         },
 
         _touchStart: function (evt) {
-            if (!evt.touches)return;
+            if (!evt.touches) return;
             this.now = Date.now();
             this.x1 = evt.touches[0].pageX;
             this.y1 = evt.touches[0].pageY;
@@ -152,7 +138,7 @@
         },
 
         _touchMove: function (evt) {
-            if (!evt.touches)return;
+            if (!evt.touches) return;
             var preV = this.preV,
                 len = evt.touches.length,
                 currentX = evt.touches[0].pageX,
@@ -199,7 +185,7 @@
         },
 
         _touchEnd: function (evt) {
-            if (!evt.changedTouches)return;
+            if (!evt.changedTouches) return;
             this._cancelLongTap();
             var _self = this;
             if (evt.touches.length < 2) {
@@ -252,8 +238,8 @@
             return Math.abs(x1 - x2) >= Math.abs(y1 - y2) ? (x1 - x2 > 0 ? 'Left' : 'Right') : (y1 - y2 > 0 ? 'Up' : 'Down')
         }
 
-
-    };
+    });
 
     return Gesturer;
+
 }));
