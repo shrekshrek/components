@@ -34,7 +34,7 @@
             this.pageMax = config.pageMax || (this.isX ? Math.round(this.w1 / this.w0) : Math.round(this.h1 / this.h0));
         },
 
-        size: function(rect){
+        size: function (rect) {
             JT.set(this.el, {width: rect.width});
             JT.set(this.el, {height: rect.height});
             this.update();
@@ -96,10 +96,13 @@
                 this.dy = evt.deltaY;
             }
 
-            if (this.moveTimeout) clearTimeout(this.moveTimeout);
+            if (this.moveTimeout) {
+                clearTimeout(this.moveTimeout);
+                this.moveTimeout = null;
+            }
             this.moveTimeout = setTimeout(function () {
                 _self.dx = _self.dy = 0;
-            }, 10);
+            }, 50);
         },
 
         onTouchEnd: function () {
