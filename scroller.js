@@ -17,175 +17,175 @@
 
 }(function (Scroller, JT) {
 
-    function calcNum(n0, dn, max, min) {
-        if (n0 < max && n0 > min) {
-            dn *= 0.95;
-        } else if (n0 > max) {
-            var _d = (max - n0) * 0.2;
-            if (dn > 0) dn += _d;
-            else dn = _d;
-        } else {
-            var _d = (min - n0) * 0.2;
-            if (dn < 0) dn += _d;
-            else dn = _d;
+    var Controller = function (options) {
+        var empty = function () {
+        };
+        this.onInit = options.onInit || empty;
+        this.onUpdate = options.onUpdate || empty;
+        this.init.call(this, options.range || 0, options.length || 0);
+    };
+
+    Object.assign(Controller.prototype, {
+        init: function (range, length) {
+            this.delta = 0;
+            this.value = 0;
+            this.range = range;
+            this.length = Math.max(length, range);
+            this.max = Math.max(this.range - this.length, 0);
+            this.min = Math.min(this.range - this.length, 0);
+            this.onInit();
+        },
+
+        cancelEase: function () {
+            if (this.easeTimeout) {
+                cancelAnimationFrame(this.easeTimeout);
+                this.easeTimeout = null;
+            }
+        },
+
+        cancelMove: function () {
+            if (this.moveTimeout) {
+                clearTimeout(this.moveTimeout);
+                this.moveTimeout = null;
+            }
+        },
+
+        start: function () {
+            this.cancelEase();
+            this.delta = 0;
+        },
+
+        move: function (delta) {
+            var _self = this;
+
+            if (this.value > this.max || this.value < this.min) {
+                this.value += delta * 0.4;
+            } else {
+                this.value += delta;
+            }
+            this.onUpdate();
+            this.delta = delta;
+
+            this.cancelMove();
+            this.moveTimeout = setTimeout(function () {
+                _self.delta = 0;
+            }, 100);
+        },
+
+        end: function () {
+            this.cancelMove();
+            this.easeTo();
+        },
+
+        seek: function (num) {
+            this.value = num;
+            this.onUpdate();
+        },
+
+        easeTo: function () {
+            var _self = this;
+
+            this.calcDelta();
+            this.value += this.delta;
+            this.onUpdate();
+
+            if (this.value > this.max || this.value < this.min || Math.abs(this.delta) > 0.1) {
+                this.easeTimeout = requestAnimationFrame(function () {
+                    _self.easeTo();
+                });
+            }
+        },
+
+        calcDelta: function () {
+            if (this.value < this.max && this.value > this.min) {
+                this.delta *= 0.95;
+            } else if (this.value > this.max) {
+                var _d = (this.max - this.value) * 0.2;
+                this.delta = this.delta > 0 ? this.delta + _d : _d;
+            } else {
+                var _d = (this.min - this.value) * 0.2;
+                this.delta = this.delta < 0 ? this.delta + _d : _d;
+            }
         }
-        return dn;
-    }
+    });
 
     Scroller = function (config) {
         this.el = config.el;
         this.drag = config.drag || this.el.querySelector('.contain');
         this.bar = config.bar;
         this.barDrag = this.bar ? this.bar.children[0] : undefined;
-        this.isX = config.isX || false;
-        this.isY = config.isY || true;
+        this.xflow = config.xflow || false;
+        this.yflow = config.yflow || true;
 
-        this.init();
+        var _self = this;
+
+        if (this.xflow) {
+            this.xctrl = new Controller({
+                range: parseFloat(JT.get(this.el, 'width')),
+                length: parseFloat(JT.get(this.drag, 'width')),
+                onInit: function () {
+
+                },
+                onUpdate: function () {
+                    JT.set(_self.drag, {x: this.value});
+                }
+            });
+        }
+
+        if (this.yflow) {
+            if (this.barDrag) {
+                this.barH = parseFloat(JT.get(this.bar, 'height'));
+                this.barDragH = 0;
+            }
+
+            this.yctrl = new Controller({
+                range: parseFloat(JT.get(this.el, 'height')),
+                length: parseFloat(JT.get(this.drag, 'height')),
+                onInit: function () {
+                    if (_self.barDrag) {
+                        _self.barDragH = this.range / this.length * this.barH;
+                        JT.set(_self.barDrag, {height: _self.barDragH});
+                    }
+                },
+                onUpdate: function () {
+                    JT.set(_self.drag, {y: this.value});
+                    if (_self.barDrag) {
+                        var _y = this.value / (this.length - this.range) * (_self.barDragH - _self.barH);
+                        JT.set(_self.barDrag, {y: _y});
+                    }
+                }
+            });
+        }
+
     };
 
     Object.assign(Scroller.prototype, {
         size: function (rect) {
             JT.set(this.el, {width: rect.width});
             JT.set(this.el, {height: rect.height});
-            this.init();
+
+            if (this.xflow) this.xctrl.init(rect.width, this.xctrl.length);
+            if (this.yflow) this.yctrl.init(rect.height, this.yctrl.length);
         },
 
         reset: function () {
-            if (this.isX) this.setX(0);
-            if (this.isY) this.setY(0);
-        },
-
-        setX: function (per) {
-            this.x1 = Math.floor((this.w0 - this.w1) * per / 100);
-            JT.set(this.drag, {x: this.x1});
-        },
-
-        setY: function (per) {
-            this.y1 = Math.floor((this.h0 - this.h1) * per / 100);
-            JT.set(this.drag, {y: this.y1});
-        },
-
-        init: function () {
-            if (this.isX) {
-                this.dx = 0;
-                this.x1 = JT.get(this.drag, 'x');
-                this.w0 = parseFloat(JT.get(this.el, 'width'));
-                this.w1 = parseFloat(JT.get(this.drag, 'width'));
-                this.xMax = Math.max(this.w0 - this.w1, 0);
-                this.xMin = Math.min(this.w0 - this.w1, 0);
-
-                if (this.barDrag) {
-                    this.w3 = parseFloat(JT.get(this.bar, 'width'));
-                    this.w4 = this.w0 / this.w1 * this.w3;
-                    JT.set(this.barDrag, {width: this.w4});
-                }
-            }
-
-            if (this.isY) {
-                this.dy = 0;
-                this.y1 = JT.get(this.drag, 'y');
-                this.h0 = parseFloat(JT.get(this.el, 'height'));
-                this.h1 = parseFloat(JT.get(this.drag, 'height'));
-                this.yMax = Math.max(this.h0 - this.h1, 0);
-                this.yMin = Math.min(this.h0 - this.h1, 0);
-
-                if (this.barDrag) {
-                    this.h3 = parseFloat(JT.get(this.bar, 'height'));
-                    this.h4 = this.h0 / this.h1 * this.h3;
-                    JT.set(this.barDrag, {height: this.h4});
-                }
-            }
-        },
-
-        updateX: function (num) {
-            JT.set(this.drag, {x: num});
-            if (this.barDrag) {
-                var _x = num / (this.w1 - this.w0) * (this.w4 - this.w3);
-                JT.set(this.barDrag, {x: _x});
-            }
-        },
-
-        updateY: function (num) {
-            JT.set(this.drag, {y: num});
-            if (this.barDrag) {
-                var _y = num / (this.h1 - this.h0) * (this.h4 - this.h3);
-                JT.set(this.barDrag, {y: _y});
-            }
+            if (this.xflow) this.xctrl.seek(0);
+            if (this.yflow) this.yctrl.seek(0);
         },
 
         onTouchStart: function () {
-            if (this.easeTimeout) {
-                cancelAnimationFrame(this.easeTimeout);
-                this.easeTimeout = null;
-            }
-            if (this.isX) this.dx = 0;
-            if (this.isY) this.dy = 0;
+            if (this.xflow) this.xctrl.start();
+            if (this.yflow) this.yctrl.start();
         },
 
-        moveTimeout: null,
         onTouchMove: function (evt) {
-            var _self = this;
-
-            if (this.isX) {
-                if (this.x1 > this.xMax || this.x1 < this.xMin) {
-                    this.x1 += evt.deltaX * 0.4;
-                } else {
-                    this.x1 += evt.deltaX;
-                }
-                // JT.set(this.drag, {x: this.x1});
-                this.updateX(this.x1);
-                this.dx = evt.deltaX;
-            }
-
-            if (this.isY) {
-                if (this.y1 > this.yMax || this.y1 < this.yMin) {
-                    this.y1 += evt.deltaY * 0.4;
-                } else {
-                    this.y1 += evt.deltaY;
-                }
-                // JT.set(this.drag, {y: this.y1});
-                this.updateY(this.y1);
-                this.dy = evt.deltaY;
-            }
-
-            if (this.moveTimeout) {
-                clearTimeout(this.moveTimeout);
-                this.moveTimeout = null;
-            }
-            this.moveTimeout = setTimeout(function () {
-                _self.dx = _self.dy = 0;
-            }, 100);
+            if (this.xflow) this.xctrl.move(evt.deltaX);
+            if (this.yflow) this.yctrl.move(evt.deltaY);
         },
 
         onTouchEnd: function () {
-            if (this.moveTimeout) {
-                clearTimeout(this.moveTimeout);
-                this.moveTimeout = null;
-            }
-            this.easeTo();
-        },
-
-        easeTimeout: null,
-        easeTo: function () {
-            var _self = this;
-
-            if (this.isX) {
-                this.x1 += this.dx;
-                this.updateX(this.x1);
-                this.dx = calcNum(this.x1, this.dx, this.xMax, this.xMin);
-            }
-
-            if (this.isY) {
-                this.y1 += this.dy;
-                this.updateY(this.y1);
-                this.dy = calcNum(this.y1, this.dy, this.yMax, this.yMin);
-            }
-
-            if (this.x1 > this.xMax + 0.1 || this.x1 < this.xMin - 0.1 || this.y1 > this.yMax + 0.1 || this.y1 < this.yMin - 0.1 || Math.abs(this.dx) > 0.1 || Math.abs(this.dy) > 0.1) {
-                this.easeTimeout = requestAnimationFrame(function () {
-                    _self.easeTo();
-                }, 1000 / 60);
-            }
+            if (this.xflow) this.xctrl.end();
+            if (this.yflow) this.yctrl.end();
         },
 
     });
