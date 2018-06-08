@@ -2,20 +2,17 @@
  * GIT: https://github.com/shrekshrek/components
  **/
 
-(function (factory) {
-
-    if (typeof define === 'function' && define.amd) {
-        define(['jstween', 'exports'], function (JT, exports) {
-            window.Scroller = factory(exports, JT);
-        });
-    } else if (typeof exports !== 'undefined') {
+(function (global, factory) {
+    if (typeof exports === 'object' && typeof module !== 'undefined') {
         var JT = require('jstween');
-        factory(exports, JT);
+        module.exports = factory(JT);
+    } else if (typeof define === 'function' && define.amd) {
+        define(['jstween'], factory);
     } else {
-        window.Scroller = factory({}, window.JT);
+        global.Scroller = factory(global.JT);
     }
-
-}(function (Scroller, JT) {
+}(this, (function (JT) {
+    'use strict';
 
     var Controller = function (options) {
         var empty = function () {
@@ -109,7 +106,7 @@
         }
     });
 
-    Scroller = function (config) {
+    var Scroller = function (config) {
         this.el = config.el;
         this.drag = config.drag || this.el.querySelector('.contain');
         this.bar = config.bar;
@@ -192,4 +189,4 @@
 
     return Scroller;
 
-}));
+})));

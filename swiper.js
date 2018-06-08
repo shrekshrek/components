@@ -2,38 +2,31 @@
  * GIT: https://github.com/shrekshrek/components
  **/
 
-(function (factory) {
-
-    if (typeof define === 'function' && define.amd) {
-        define(['jstween', 'exports'], function (JT, exports) {
-            window.Swiper = factory(exports, JT);
-        });
-    } else if (typeof exports !== 'undefined') {
+(function (global, factory) {
+    if (typeof exports === 'object' && typeof module !== 'undefined') {
         var JT = require('jstween');
-        factory(exports, JT);
+        module.exports = factory(JT);
+    } else if (typeof define === 'function' && define.amd) {
+        define(['jstween'], factory);
     } else {
-        window.Swiper = factory({}, window.JT);
+        global.Swiper = factory(global.JT);
     }
+}(this, (function (JT) {
+    'use strict';
 
-}(function (Swiper, JT) {
+    var Swiper = function (config) {
+        this.el = config.el;
+        this.drag = config.drag || this.el.querySelector('.contain');
+        this.isX = config.isX == undefined ? true : config.isX;
+        // this.isY = config.isY == undefined ? false : config.isY;
 
-    Swiper = function () {
-        this.initialize.apply(this, arguments);
+        this.update();
+
+        this.pageId = 0;
+        this.pageMax = config.pageMax || (this.isX ? Math.round(this.w1 / this.w0) : Math.round(this.h1 / this.h0));
     };
 
     Swiper.prototype = {
-        initialize: function (config) {
-            this.el = config.el;
-            this.drag = config.drag || this.el.querySelector('.contain');
-            this.isX = config.isX == undefined ? true : config.isX;
-            // this.isY = config.isY == undefined ? false : config.isY;
-
-            this.update();
-
-            this.pageId = 0;
-            this.pageMax = config.pageMax || (this.isX ? Math.round(this.w1 / this.w0) : Math.round(this.h1 / this.h0));
-        },
-
         size: function (rect) {
             JT.set(this.el, {width: rect.width});
             JT.set(this.el, {height: rect.height});
@@ -142,4 +135,5 @@
     };
 
     return Swiper;
-}));
+
+})));

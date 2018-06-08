@@ -2,46 +2,34 @@
  * GIT: https://github.com/shrekshrek/components
  **/
 
-(function (factory) {
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+        typeof define === 'function' && define.amd ? define(factory) :
+            (global.ImgEditor = factory());
+}(this, (function () {
+    'use strict';
 
-    if (typeof define === 'function' && define.amd) {
-        define(['exports'], function (exports) {
-            window.ImgEditor = factory(exports);
-        });
-    } else if (typeof exports !== 'undefined') {
-        factory(exports);
-    } else {
-        window.ImgEditor = factory({});
-    }
+    var ImgEditor = function (config) {
+        var _self = this;
+        this.el = config.el;
+        this.color = config.color;
+        this.type = config.type || 'jpeg';
+        this.quality = config.quality || 0.7;
 
-}(function (ImgEditor) {
+        this.ctx = this.el.getContext('2d');
+        this.ctx.imageSmoothingEnabled = true;
+        this.width = this.el.width;
+        this.height = this.el.height;
+        this.editData = {x: this.width / 2, y: this.height / 2, r: 0, s: 1};
 
-    ImgEditor = function () {
-        this.initialize.apply(this, arguments);
+        this.editImg = new Image();
+        this.editImg.onload = function () {
+            _self.editData.s = Math.max(_self.width / this.width, _self.height / this.height);
+            _self.update();
+        };
     };
 
     ImgEditor.prototype = {
-        initialize: function (config) {
-            var _self = this;
-            this.el = config.el;
-            this.color = config.color;
-            this.type = config.type || 'jpeg';
-            this.quality = config.quality || 0.7;
-
-            this.ctx = this.el.getContext('2d');
-            this.ctx.imageSmoothingEnabled = true;
-            this.width = this.el.width;
-            this.height = this.el.height;
-            this.editData = {x: this.width / 2, y: this.height / 2, r: 0, s: 1};
-
-            this.editImg = new Image();
-            this.editImg.onload = function () {
-                _self.editData.s = Math.max(_self.width / this.width, _self.height / this.height);
-                _self.update();
-            };
-
-        },
-
         size: function (rect) {
             this.width = rect.width;
             this.height = rect.height;
@@ -97,4 +85,5 @@
     };
 
     return ImgEditor;
-}));
+
+})));

@@ -2,19 +2,12 @@
  * GIT: https://github.com/shrekshrek/components
  **/
 
-(function (factory) {
-
-    if (typeof define === 'function' && define.amd) {
-        define(['exports'], function (exports) {
-            window.Gesturer = factory(exports);
-        });
-    } else if (typeof exports !== 'undefined') {
-        factory(exports);
-    } else {
-        window.Gesturer = factory({});
-    }
-
-}(function (Gesturer) {
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+        typeof define === 'function' && define.amd ? define(factory) :
+            (global.Gesturer = factory());
+}(this, (function () {
+    'use strict';
 
     function getLen(v) {
         return Math.sqrt(v.x * v.x + v.y * v.y);
@@ -45,7 +38,7 @@
         return angle * 180 / Math.PI;
     }
 
-    Gesturer = function (config) {
+    var Gesturer = function (config) {
         this.el = config.el;
 
         var empty = function () {
@@ -87,10 +80,6 @@
     };
 
     Object.assign(Gesturer.prototype, {
-        initialize: function (config) {
-
-        },
-
         on: function () {
             this.el.addEventListener("touchstart", this._touchStart, false);
             this.el.addEventListener("touchmove", this._touchMove, false);
@@ -242,4 +231,4 @@
 
     return Gesturer;
 
-}));
+})));

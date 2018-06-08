@@ -2,19 +2,12 @@
  * GIT: https://github.com/shrekshrek/components
  **/
 
-(function (factory) {
-
-    if (typeof define === 'function' && define.amd) {
-        define(['exports'], function (exports) {
-            window.Former = factory(exports);
-        });
-    } else if (typeof exports !== 'undefined') {
-        factory(exports);
-    } else {
-        window.Former = factory({});
-    }
-
-}(function (Former) {
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+        typeof define === 'function' && define.amd ? define(factory) :
+            (global.Former = factory());
+}(this, (function () {
+    'use strict';
 
     // 'date','month','week','time','datetime-local',
     // 'email','password','tel','text',
@@ -236,13 +229,15 @@
 
     // -------------------------------------------------------------------
 
-
-    Former.TextInput = TextInput;
-    Former.MobileInput = MobileInput;
-    Former.EmailInput = EmailInput;
-    Former.PasswordInput = PasswordInput;
-    Former.DateInput = DateInput;
-    Former.ComboBox = ComboBox;
+    var Former = {
+        TextInput: TextInput,
+        MobileInput: MobileInput,
+        EmailInput: EmailInput,
+        PasswordInput: PasswordInput,
+        DateInput: DateInput,
+        ComboBox: ComboBox
+    };
 
     return Former;
-}));
+
+})));

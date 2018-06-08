@@ -1,30 +1,17 @@
 /*!
- * VERSION: 0.7.0
- * DATE: 2016-8-17
  * GIT: https://github.com/shrekshrek/jstween
- * @author: Shrek.wang
  **/
 
-(function (factory) {
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+        typeof define === 'function' && define.amd ? define(factory) :
+            (global.JT = factory());
+}(this, (function () {
+    'use strict';
 
-    if (typeof define === 'function' && define.amd) {
-        define(['exports'], function(exports) {
-            window.JT = factory(exports);
-        });
-    } else if (typeof exports !== 'undefined') {
-        factory(exports);
-    } else {
-        window.JT = factory({});
-    }
+    var JT = {};
 
-}(function (JT) {
     // --------------------------------------------------------------------辅助方法
-    function extend(obj, obj2) {
-        for (var prop in obj2) {
-            obj[prop] = obj2[prop];
-        }
-    }
-
     function each(obj, callback) {
         if (obj.length && obj.length > 0) {
             for (var i = 0; i < obj.length; i++) {
@@ -47,7 +34,7 @@
         });
     }
 
-    function fixed3(n) {
+    function fixed(n) {
         return Math.round(n * 1000) / 1000;
     }
 
@@ -59,83 +46,86 @@
 
     var nowOffset = Date.now();
 
-    var now = function () {
+    JT.now = function () {
         return Date.now() - nowOffset;
     };
 
 
     // --------------------------------------------------------------------prefix
-    var prefix = '';
-
-    (function () {
+    var prefix = function () {
         var _d = document.createElement('div');
         var _prefixes = ['Webkit', 'Moz', 'Ms', 'O'];
 
         for (var i in _prefixes) {
-            if ((_prefixes[i] + 'Transform') in _d.style) {
-                prefix = _prefixes[i];
-                break;
-            }
+            if ((_prefixes[i] + 'Transform') in _d.style) return _prefixes[i];
         }
-    }());
+    }();
 
     function browserPrefix(str) {
-        if (str) {
-            return prefix + firstUper(str);
-        } else {
-            return prefix;
-        }
+        return prefix + (str ? firstUper(str) : '');
     }
 
     var requestFrame = window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
         window.msRequestAnimationFrame ||
         function (callback) {
             window.setTimeout(callback, 1000 / 60);
         };
 
-
     // --------------------------------------------------------------------dom style相关方法
-    function getElement(target) {
-        if (!target) throw "target is undefined, can't tween!!!";
+    function getElement(el) {
+        if (!el) throw "el is undefined, can't tween!!!";
 
-        if (typeof(target) == 'string') {
-            return (typeof(document) === 'undefined') ? target : (document.querySelectorAll ? document.querySelectorAll(target) : document.getElementById((target.charAt(0) === '#') ? target.substr(1) : target));
+        if (typeof(el) === 'string') {
+            return document.querySelectorAll(el);
         } else {
-            return target;
+            return el;
         }
     }
 
-    function checkPropName(target, name) {
-        if (name == 'rotation' || name == 'scale') return name;
+    var keywords = [
+        'ease', 'delay', 'yoyo', 'repeat', 'repeatDelay',
+        'onStart', 'onStartScope', 'onStartParams',
+        'onRepeat', 'onRepeatScope', 'onRepeatParams',
+        'onEnd', 'onEndScope', 'onEndParams',
+        'onUpdate', 'onUpdateScope', 'onUpdateParams',
+        'interpolation', 'isReverse', 'timeScale', 'isFrom', 'isPlaying'
+    ];
 
-        if (target._jt_obj[name] !== undefined) return name;
+    var specialProps = ['rotation', 'scale', 'autoAlpha'];
 
-        if (target.style[name] !== undefined) return name;
+    function checkPropName(el, name, isDom) {
+        for (var i = 0, l = keywords.length; i < l; i++) {
+            if (name === keywords[i]) return undefined;
+        }
 
-        name = browserPrefix(name);
-        if (target.style[name] !== undefined) return name;
+        if (isDom) {
+            for (var i = 0, l = specialProps.length; i < l; i++) {
+                if (name === specialProps[i]) return name;
+            }
+
+            if (el._jt_obj[name] !== undefined) return name;
+
+            if (el.style[name] !== undefined) return name;
+
+            name = browserPrefix(name);
+            if (el.style[name] !== undefined) return name;
+        } else {
+            if (typeof(el[name]) === 'string' || typeof(el[name]) === 'number') return name;
+        }
 
         return undefined;
     }
 
-    function checkValue(o1, o2, o3, push) {
+    function checkValue(o1, o2) {
         var o = {};
-        if (o2 instanceof Array) {
-            o.num = [];
-            for (var i in o2) {
+        if (Array.isArray(o2)) {
+            o.num = [o1.num];
+            for (var i = 0, l = o2.length; i < l; i++) {
                 var _o = calcValue(o1, o2[i]);
-                o.num[i] = _o.num;
+                o.num.push(_o.num);
                 o.unit = _o.unit;
-            }
-            if (o3 != undefined) {
-                if (push) {
-                    o.num.push(o3.num);
-                } else {
-                    o.num.unshift(o3.num);
-                }
             }
         } else {
             o = calcValue(o1, o2);
@@ -144,36 +134,36 @@
     }
 
     function calcValue(o1, o2) {
-        var _o = regValue(o2);
+        var _o2 = regValue(o2);
 
-        if (o1.unit == 'rem' && _o.unit != 'rem') {
+        if (o1.unit === 'rem' && _o2.unit !== 'rem') {
             checkRem();
-            o1.num = fixed3(o1.num * remUnit);
-            o1.unit = 'px'
-        } else if (o1.unit != 'rem' && _o.unit == 'rem') {
+            o1.num = fixed(o1.num * remUnit);
+            o1.unit = 'px';
+        } else if (o1.unit !== 'rem' && _o2.unit === 'rem') {
             checkRem();
-            o1.num = fixed3(o1.num / remUnit);
+            o1.num = fixed(o1.num / remUnit);
             o1.unit = 'rem';
         }
 
         var _value;
-        switch (_o.ext) {
+        switch (_o2.ext) {
             case '+=':
-                _value = o1.num + _o.num;
+                _value = o1.num + _o2.num;
                 break;
             case '-=':
-                _value = o1.num - _o.num;
+                _value = o1.num - _o2.num;
                 break;
             default:
-                _value = _o.num;
+                _value = _o2.num;
                 break;
         }
-        return {num: _value, unit: _o.unit || o1.unit};
+        return {num: _value, unit: _o2.unit};
     }
 
-    function checkJtobj(target) {
-        if (target._jt_obj == undefined)
-            target._jt_obj = {
+    function checkJtobj(el) {
+        if (el._jt_obj === undefined)
+            el._jt_obj = {
                 perspective: 0,
                 x: 0,
                 y: 0,
@@ -192,15 +182,15 @@
     function regValue(value) {
         var _r = /(\+=|-=|)(-|)(\d+\.\d+|\d+)(e[+-]?[0-9]{0,2}|)(rem|px|%|)/i;
         var _a = _r.exec(value);
-        if (_a) return {num: fixed3(_a[2] + _a[3] + _a[4]), unit: _a[5], ext: _a[1]};
+        if (_a) return {num: fixed(_a[2] + _a[3] + _a[4]), unit: _a[5], ext: _a[1]};
         else return {num: 0, unit: 'px', ext: ''};
     }
 
     function checkString(value) {
-        return /\S\s+\S/g.test(value) || !/\d/g.test(value);
+        return /(,| |jpeg|jpg|png|gif|-3d)/g.test(value) || !/\d/g.test(value);
     }
 
-    function getProp(target, name) {
+    function getProp(el, name) {
         switch (name) {
             case 'perspective':
             case 'x':
@@ -214,81 +204,94 @@
             case 'scaleZ':
             case 'skewX':
             case 'skewY':
-                return target._jt_obj[name];
+                return el._jt_obj[name];
             case 'rotation':
-                return target._jt_obj['rotationZ'];
+                return el._jt_obj['rotationZ'];
             case 'scale':
-                return target._jt_obj['scaleX'];
+                return el._jt_obj['scaleX'];
+            case 'autoAlpha':
+                return getStyle(el, 'opacity');
             default:
-                return getStyle(target, name);
+                return getStyle(el, name);
         }
     }
 
-    function getStyle(target, name) {
-        if (target.style[name]) {
-            return target.style[name];
-        } else if (document.defaultView && document.defaultView.getComputedStyle) {
-            var _p = hyphenize(name);
-            var _s = document.defaultView.getComputedStyle(target, '');
-            return _s && _s.getPropertyValue(_p);
-        } else if (target.currentStyle) {
-            return target.currentStyle[name];
+    function getStyle(el, name) {
+        if (el.style[name]) {
+            return el.style[name];
         } else {
-            return null;
+            var _p = hyphenize(name);
+            var _s = window.getComputedStyle(el, null);
+            return _s[_p] || _s.getPropertyValue(_p);
         }
     }
 
-    function setProp(target, name, value) {
+    var cssNumber = {
+        'column-count': 1,
+        'columns': 1,
+        'font-weight': 1,
+        'line-height': 1,
+        'opacity': 1,
+        'z-index': 1,
+        'zoom': 1
+    };
+
+    function setProp(el, name, value, unit) {
         switch (name) {
-            case 'perspective':
             case 'x':
             case 'y':
             case 'z':
+                el._jt_obj[name] = value + (unit || 'px');
+                return true;
             case 'rotationX':
             case 'rotationY':
             case 'rotationZ':
+            case 'skewX':
+            case 'skewY':
+                el._jt_obj[name] = value % 360 + 'deg';
+                return true;
+            case 'perspective':
             case 'scaleX':
             case 'scaleY':
             case 'scaleZ':
-            case 'skewX':
-            case 'skewY':
-                target._jt_obj[name] = value;
+                el._jt_obj[name] = value;
                 return true;
             case 'rotation':
-                target._jt_obj['rotationZ'] = value;
+                el._jt_obj['rotationZ'] = value;
                 return true;
             case 'scale':
-                target._jt_obj['scaleX'] = value;
-                target._jt_obj['scaleY'] = value;
+                el._jt_obj['scaleX'] = value;
+                el._jt_obj['scaleY'] = value;
                 return true;
+            case 'autoAlpha':
+                setStyle(el, 'opacity', value);
+                setStyle(el, 'display', value > 0 ? 'block' : 'none');
+                return false;
             default:
-                setStyle(target, name, value);
+                value = !cssNumber[hyphenize(name)] ? value + (unit || "px") : value;
+                setStyle(el, name, value);
                 return false;
         }
     }
 
-    function setStyle(target, name, value) {
-        target.style[name] = value;
+    function setStyle(el, name, value) {
+        el.style[name] = value;
     }
 
-    function isDOM(obj) {
+    function checkDom(obj) {
         return typeof(obj) === 'object' && obj.nodeType === 1;
     }
 
     function updateTransform(obj) {
         var _t = '';
         if (obj._jt_obj.perspective) _t += 'perspective(' + obj._jt_obj.perspective + ') ';
-        if (obj._jt_obj.x || obj._jt_obj.y || obj._jt_obj.z) _t += 'translate3d(' + checkNumber(obj._jt_obj.x) + ',' + checkNumber(obj._jt_obj.y) + ',' + checkNumber(obj._jt_obj.z) + ') ';
-        if (obj._jt_obj.rotationX) _t += 'rotateX(' + obj._jt_obj.rotationX % 360 + 'deg) ';
-        if (obj._jt_obj.rotationY) _t += 'rotateY(' + obj._jt_obj.rotationY % 360 + 'deg) ';
-        if (obj._jt_obj.rotationZ) _t += 'rotateZ(' + obj._jt_obj.rotationZ % 360 + 'deg) ';
-        if (obj._jt_obj.scaleX != 1 || obj._jt_obj.scaleY != 1 || obj._jt_obj.scaleZ != 1) _t += 'scale3d(' + obj._jt_obj.scaleX + ', ' + obj._jt_obj.scaleY + ', ' + obj._jt_obj.scaleZ + ') ';
-        if (obj._jt_obj.skewX || obj._jt_obj.skewY) _t += 'skew(' + obj._jt_obj.skewX + 'deg,' + obj._jt_obj.skewY + 'deg) ';
+        if (obj._jt_obj.x || obj._jt_obj.y || obj._jt_obj.z) _t += 'translate3d(' + obj._jt_obj.x + ',' + obj._jt_obj.y + ',' + obj._jt_obj.z + ') ';
+        if (obj._jt_obj.rotationX) _t += 'rotateX(' + obj._jt_obj.rotationX + ') ';
+        if (obj._jt_obj.rotationY) _t += 'rotateY(' + obj._jt_obj.rotationY + ') ';
+        if (obj._jt_obj.rotationZ) _t += 'rotateZ(' + obj._jt_obj.rotationZ + ') ';
+        if (obj._jt_obj.scaleX !== 1 || obj._jt_obj.scaleY !== 1 || obj._jt_obj.scaleZ !== 1) _t += 'scale3d(' + obj._jt_obj.scaleX + ', ' + obj._jt_obj.scaleY + ', ' + obj._jt_obj.scaleZ + ') ';
+        if (obj._jt_obj.skewX || obj._jt_obj.skewY) _t += 'skew(' + obj._jt_obj.skewX + ',' + obj._jt_obj.skewY + ') ';
         obj.style[browserPrefix('transform')] = _t;
-    }
-
-    function checkNumber(value) {
-        return value + (typeof(value) == 'number' ? 'px' : '');
     }
 
     // --------------------------------------------------------------------计算1rem单位值
@@ -312,43 +315,26 @@
 
     // --------------------------------------------------------------------全局update
     var tweens = [];
+    var tempTweens = [];
     var isUpdating = false;
     var lastTime = 0;
 
     function globalUpdate() {
-        isUpdating = true;
         var _len = tweens.length;
-        var _len2 = calls.length;
-        if (_len === 0 && _len2 === 0) {
+        if (_len === 0) {
             isUpdating = false;
             return;
         }
 
-        var _now = now();
+        var _now = JT.now();
         var _step = _now - lastTime;
         lastTime = _now;
+        if (_step > 500) _step = 33;
 
+        tempTweens = tweens.slice(0);
         for (var i = 0; i < _len; i++) {
-            var _tween = tweens[i];
-            if (_tween && !_tween._update(_step)) {
-                if (_tween.isActive) {
-                    _tween.isActive = false;
-                    tweens.splice(i, 1);
-                    if (_tween.onEnd) _tween.onEnd.apply(_tween, _tween.onEndParams);
-                }
-                i--;
-                _len--;
-            }
-        }
-
-        for (var j = 0; j < _len2; j++) {
-            var _call = calls[j];
-            if (_call && !_call._update(_step)) {
-                calls.splice(j, 1);
-                if (_call.onEnd) _call.onEnd.apply(_call, _call.onEndParams);
-                j--;
-                _len2--;
-            }
+            var _tween = tempTweens[i];
+            if (_tween && _tween.isPlaying && !_tween._update(_step)) _tween.pause();
         }
 
         requestFrame(globalUpdate);
@@ -359,102 +345,121 @@
         this.initialize.apply(this, arguments);
     }
 
-    extend(tween.prototype, {
-        initialize: function (target, time, fromVars, toVars, isDom) {
+    Object.assign(tween.prototype, {
+        initialize: function (el, time, fromVars, toVars, isDom) {
             this.fromVars = fromVars;
             this.curVars = {};
             this.toVars = toVars;
-            this.target = target;
+            this.el = el;
             this.duration = Math.max(time, 0) * 1000;
             this.ease = toVars.ease || JT.Linear.None;
             this.delay = Math.max(toVars.delay || 0, 0) * 1000;
             this.yoyo = toVars.yoyo || false;
-            this.repeat = this.curRepeat = Math.floor(toVars.repeat || 0);
+            this.repeat = toVars.repeat || 0;
             this.repeatDelay = Math.max(toVars.repeatDelay || 0, 0) * 1000;
             this.onStart = toVars.onStart || null;
+            this.onStartScope = toVars.onStartScope || this;
             this.onStartParams = toVars.onStartParams || [];
             this.onRepeat = toVars.onRepeat || null;
+            this.onRepeatScope = toVars.onRepeatScope || this;
             this.onRepeatParams = toVars.onRepeatParams || [];
             this.onEnd = toVars.onEnd || null;
+            this.onEndScope = toVars.onEndScope || this;
             this.onEndParams = toVars.onEndParams || [];
             this.onUpdate = toVars.onUpdate || null;
+            this.onUpdateScope = toVars.onUpdateScope || this;
             this.onUpdateParams = toVars.onUpdateParams || [];
-            this.isPlaying = toVars.isPlaying || true;
+            this.isPlaying = false;
             this.interpolation = toVars.interpolation || null;
-            this.isActive = toVars.isActive || true;
+            this.isReverse = toVars.isReverse || false;
+            this.timeScale = toVars.timeScale || 1;
 
-            this.isReverse = false;
+            this.isFrom = toVars.isFrom || false;
+            this.isInited = false;
+            this.isSeek = false;
+            this.isKeep = false;
+            this.isYoReverse = false;
             this.isDom = isDom;
 
-            this.curTime = 0;
-            this.isStart = false;
+            this.repeat = this.repeat < 0 ? 999999999999 : Math.floor(this.repeat);
+            this.curRepeat = 0;
+
+            this.elapsed = null;
+
             this.startTime = this.delay;
-            this.endTime = this.startTime + this.repeatDelay + this.duration;
+            this.endTime = this.startTime + this.repeatDelay * this.repeat + this.duration * (this.repeat + 1);
+            this.curTime = null;
+            this.lastTime = null;
 
-            if (this.delay != 0) {
-                this._updateProp();
-                if (this.onUpdate) this.onUpdate.apply(this, this.onUpdateParams);
-            }
-
-            if (this.isActive) this._addSelf();
+            if (toVars.isPlaying !== false) this.play();
         },
 
         _update: function (time) {
-            if (!this.isPlaying) return true;
+            this.isKeep = false;
 
-            this.curTime += time;
+            time = (this.isReverse ? -1 : 1) * time * this.timeScale;
+            var _lastTime = this.curTime;
+            var _curTime = Math.min(this.endTime, Math.max(0, _lastTime + time));
 
-            if (this.curTime < this.startTime) return true;
+            if (_curTime === this.curTime) return true;
 
-            if (!this.isStart) this.curTime += this.repeatDelay;
+            this.lastTime = _lastTime;
+            this.curTime = _curTime;
 
-            if (this.curTime < this.startTime + this.repeatDelay) return true;
-
-            if (this.curTime < this.endTime) {
-                this._updateProp();
-                if (this.onUpdate) this.onUpdate.apply(this, this.onUpdateParams);
-            } else {
-                if (this.curRepeat == 0) {
-                    this._updateProp();
-                    if (this.onUpdate) this.onUpdate.apply(this, this.onUpdateParams);
-                    // if (this.onEnd) this.onEnd.apply(this, this.onEndParams);
-                    this._checkStart();
-                    return false;
-                }
-
-                if (this.yoyo) this.isReverse = !this.isReverse;
-
-                var _time = (this.curTime - this.endTime) % (this.duration + this.repeatDelay);
-                if (this.repeatDelay == 0) {
-                    this.curTime = this.startTime + _time;
-                    this._updateProp();
-                } else {
-                    this._updateProp();
-                    this.curTime = this.startTime + _time;
-                }
-
-                if (this.onUpdate) this.onUpdate.apply(this, this.onUpdateParams);
-                if (this.onRepeat) this.onRepeat.apply(this, this.onRepeatParams);
-                if (this.curRepeat > 0) this.curRepeat--;
+            var _repeat = Math.min(this.repeat, Math.max(0, Math.floor((this.curTime - this.startTime) / (this.duration + this.repeatDelay))));
+            var _isRepeat = false;
+            if (_repeat !== this.curRepeat) {
+                this.curRepeat = _repeat;
+                if (this.yoyo) this.isYoReverse = this.curRepeat % 2 !== 0;
+                _isRepeat = true;
             }
 
-            this._checkStart();
+            if (this.isFrom) {
+                initData(this);
+                this._updateProp();
+            }
+
+            if (this.lastTime < this.startTime && this.curTime < this.startTime) return true;
+
+            if (!this.isFrom) {
+                initData(this);
+                this._updateProp();
+            }
+
+            if (this.lastTime < this.curTime) {
+                if (this.lastTime <= this.startTime && this.curTime > this.startTime) {
+                    if (!this.isSeek && this.onStart) this.onStart.apply(this.onStartScope, this.onStartParams);
+                }
+
+                if (_isRepeat && !this.isSeek && this.onRepeat) this.onRepeat.apply(this.onRepeatScope, this.onRepeatParams);
+
+                if (this.lastTime < this.endTime && this.curTime >= this.endTime) {
+                    if (!this.isSeek && this.onEnd) this.onEnd.apply(this.onEndScope, this.onEndParams);
+                    return this.isKeep;
+                }
+            } else {
+                if (this.lastTime >= this.endTime && this.curTime < this.endTime) {
+                    if (!this.isSeek && this.onEnd) this.onEnd.apply(this.onEndScope, this.onEndParams);
+                }
+
+                if (_isRepeat && !this.isSeek && this.onRepeat) this.onRepeat.apply(this.onRepeatScope, this.onRepeatParams);
+
+                if (this.lastTime > this.startTime && this.curTime <= this.startTime) {
+                    if (!this.isSeek && this.onStart) this.onStart.apply(this.onStartScope, this.onStartParams);
+                    return this.isKeep;
+                }
+            }
 
             return true;
         },
 
-        _checkStart: function () {
-            if (!this.isStart) {
-                this.isStart = true;
-                if (this.onStart) this.onStart.apply(this, this.onStartParams);
-            }
-        },
-
         _updateProp: function () {
-            var _elapsed = this.duration == 0 ? 1 : ((this.curTime - this.startTime - this.repeatDelay) / this.duration);
-            _elapsed = Math.max(0, Math.min(1, _elapsed));
+            var _elapsed = Math.min(1, Math.max(0, (this.curTime === this.endTime ? this.duration : (this.curTime - this.startTime) % (this.duration + this.repeatDelay)) / this.duration));
 
-            if (this.isReverse) _elapsed = 1 - _elapsed;
+            if (this.isYoReverse) _elapsed = 1 - _elapsed;
+
+            if (_elapsed === this.elapsed) return;
+            this.elapsed = _elapsed;
 
             var _radio = this.ease(_elapsed);
 
@@ -465,268 +470,240 @@
                 var _end = this.toVars[prop];
 
                 var _n;
-                if (_end.num instanceof Array) {
+                if (Array.isArray(_end.num)) {
                     _n = this.interpolation(_end.num, _radio);
                 } else {
-                    _n = _start.num + ( _end.num - _start.num ) * _radio;
+                    _n = _start.num + (_end.num - _start.num) * _radio;
                 }
-                _n = fixed3(_n);
+
+                _n = fixed(_n);
                 this.curVars[prop] = {num: _n, unit: _end.unit};
 
                 if (this.isDom) {
-                    if (Math.abs(_end.num - _start.num) > 20) {
-                        _n = Math.round(_n);
-                    }
-                    if (setProp(this.target, prop, _n + (_end.unit || 0))) _trans = true;
+                    if (setProp(this.el, prop, _n, _end.unit)) _trans = true;
                 } else {
-                    this.target[prop] = _n + (_end.unit || 0);
+                    this.el[prop] = _n + (_end.unit || 0);
                 }
             }
 
-            if (_trans) updateTransform(this.target);
+            if (_trans) updateTransform(this.el);
 
-        },
-
-        _toEnd: function () {
-            var _trans = false;
-
-            for (var prop in this.fromVars) {
-                var _end = this.toVars[prop];
-
-                var _n = fixed3(_end.num);
-                this.curVars[prop] = {num: _n, unit: _end.unit};
-
-                if (this.isDom) {
-                    if (setProp(this.target, prop, _n + (_end.unit || 0))) _trans = true;
-                } else {
-                    this.target[prop] = _n + (_end.unit || 0);
-                }
-            }
-
-            if (_trans) updateTransform(this.target);
+            if (!this.isSeek && this.onUpdate) this.onUpdate.apply(this.onUpdateScope, this.onUpdateParams);
         },
 
         _addSelf: function () {
-            this.isActive = true;
             tweens.push(this);
+
             if (!isUpdating) {
                 lastTime = JT.now();
-                globalUpdate();
+                isUpdating = true;
+                requestFrame(globalUpdate);
             }
         },
 
         _removeSelf: function () {
-            this.isActive = false;
             var i = tweens.indexOf(this);
-            if (i !== -1) {
-                tweens.splice(i, 1);
-            }
+            if (i !== -1) tweens.splice(i, 1);
         },
 
-        active: function () {
+        play: function (time) {
+            this.isReverse = false;
+
+            if (time !== undefined) this.seek(time, true);
+
+            if (this.curTime === this.endTime) return this.isKeep = false;
+            else this.isKeep = true;
+
+            if (this.isPlaying) return;
+            this.isPlaying = true;
             this._addSelf();
         },
 
-        play: function () {
-            this.isPlaying = true;
+        pause: function () {
+            this.isKeep = false;
+
+            if (!this.isPlaying) return;
+            this.isPlaying = false;
+            this._removeSelf();
         },
 
-        pause: function () {
-            this.isPlaying = false;
+        stop: function () {
+            this.pause();
+            this.seek(0, true);
+        },
+
+        reverse: function (time) {
+            this.isReverse = true;
+
+            if (time !== undefined) this.seek(time, true);
+
+            if (this.curTime === 0) return this.isKeep = false;
+            else this.isKeep = true;
+
+            if (this.isPlaying) return;
+            this.isPlaying = true;
+            this._addSelf();
+        },
+
+        seek: function (time, isSeek) {
+            var _time = Math.max(0, Math.min(this.endTime, time * 1000));
+            if (this.curTime === _time) return;
+
+            this.isSeek = isSeek || false;
+            this._update((this.isReverse ? -1 : 1) * (_time - this.curTime));
+            this.isSeek = false;
+        },
+
+        setTimeScale: function (scale) {
+            this.timeScale = scale;
         },
 
         kill: function (toEnd) {
-            this._removeSelf();
-            if (toEnd) {
-                this._toEnd();
-                if (this.onEnd) this.onEnd.apply(this, this.onEndParams);
-            }
+            this.pause();
+            if (toEnd) this.seek(this.endTime);
+            this.duration = null;
+            this.curTime = this.lastTime = this.startTime = this.endTime = null;
+            this.el = this.onStart = this.onRepeat = this.onEnd = this.onUpdate = null;
         }
     });
 
 
     // --------------------------------------------------------------------tween 全局方法
-    extend(JT, {
-        get: function (target, param) {
-            var _target = getElement(target);
-            if (_target.length !== undefined) {
-                _target = _target[0];
+    function initData(obj) {
+        if (obj.isInited) return;
+        obj.isInited = true;
+
+        for (var i in obj.fromVars) {
+            var _o = regValue(obj.isDom ? getProp(obj.el, i) : obj.el[i]);
+            obj.fromVars[i] = obj.fromVars[i] === null ? _o : checkValue(_o, obj.fromVars[i]);
+            obj.toVars[i] = obj.toVars[i] === null ? _o : checkValue(obj.fromVars[i], obj.toVars[i]);
+        }
+    }
+
+    function createTween(type, el, time, fromVars, toVars) {
+        if (typeof time !== "number") throw "The second parameter must be a number!";
+
+        checkBezier(toVars);
+
+        var _el = getElement(el);
+        var _tweens = [];
+
+        each(_el, function (index, obj) {
+            var _fromVars = {};
+            var _toVars = {};
+            var _isDom = checkDom(obj);
+            var _vars;
+            switch (type) {
+                case 'fromTo':
+                    _vars = toVars;
+                    _vars.isFrom = true;
+                    break;
+                case 'from':
+                    _vars = fromVars;
+                    _vars.isFrom = true;
+                    break;
+                case 'to':
+                    _vars = toVars;
+                    _vars.isFrom = false;
+                    break;
             }
-            if (isDOM(_target)) {
-                checkJtobj(_target);
-                var _name = checkPropName(_target, param);
-                if (_name) return getProp(_target, _name);
+
+            if (_isDom) checkJtobj(obj);
+
+            for (var i in _vars) {
+                var _name = checkPropName(obj, i, _isDom);
+                if (_name) {
+                    switch (type) {
+                        case 'fromTo':
+                            _fromVars[_name] = fromVars[i];
+                            _toVars[_name] = toVars[i];
+                            break;
+                        case 'from':
+                            _fromVars[_name] = fromVars[i];
+                            _toVars[_name] = null;
+                            break;
+                        case 'to':
+                            _fromVars[_name] = null;
+                            _toVars[_name] = toVars[i];
+                            break;
+                    }
+                } else {
+                    _toVars[i] = _vars[i];
+                }
+            }
+
+            _tweens.push(new tween(obj, time, _fromVars, _toVars, _isDom));
+        });
+
+        if (_tweens.length === 0) return null;
+        else if (_tweens.length === 1) return _tweens[0];
+        else return _tweens;
+    }
+
+    Object.assign(JT, {
+        get: function (el, param) {
+            var _el = getElement(el);
+            if (_el.length !== undefined) {
+                _el = _el[0];
+            }
+            var _isDom = checkDom(_el);
+            if (_isDom) {
+                checkJtobj(_el);
+                var _name = checkPropName(_el, param, _isDom);
+                if (_name) return getProp(_el, _name);
                 else return null;
             } else {
-                return _target[param];
+                return _el[param];
             }
         },
 
-        set: function (target, params) {
-            var _target = getElement(target);
-            each(_target, function (index, obj) {
-                if (isDOM(obj)) {
+        set: function (el, params) {
+            var _el = getElement(el);
+            each(_el, function (index, obj) {
+                var _isDom = checkDom(obj);
+                if (_isDom) {
                     checkJtobj(obj);
                     var _trans = false;
                     for (var i in params) {
-                        var _name = checkPropName(obj, i);
+                        var _name = checkPropName(obj, i, _isDom);
                         if (_name) {
                             if (checkString(params[i])) {
-                                setProp(obj, _name, params[i]);
+                                setProp(obj, _name, params[i], '');
                             } else {
                                 var _o = checkValue(regValue(getProp(obj, _name)), params[i]);
-                                if (setProp(obj, _name, _o.num + (_o.unit || 0))) _trans = true;
+                                if (setProp(obj, _name, _o.num, _o.unit)) _trans = true;
                             }
                         }
                     }
-
                     if (_trans) updateTransform(obj);
-
                 } else {
-                    for (var j in params) {
-                        var _o = checkValue(regValue(obj[j]), params[j]);
-                        obj[j] = _o.num + (_o.unit || 0);
+                    for (var i in params) {
+                        var _o = checkValue(regValue(obj[i]), params[i]);
+                        obj[i] = _o.num + (_o.unit || 0);
                     }
                 }
             });
         },
 
-        fromTo: function (target, time, fromVars, toVars) {
-            checkBezier(toVars);
-            var _target = getElement(target);
-            var _tweens = [];
-            each(_target, function (index, obj) {
-                var _fromVars = {};
-                var _toVars = {};
-                var _isDom = isDOM(obj);
-                if (_isDom) {
-                    checkJtobj(obj);
-                    for (var i in toVars) {
-                        var _name = checkPropName(obj, i);
-                        if (_name) {
-                            var _o = regValue(getProp(obj, _name));
-                            _fromVars[_name] = checkValue(_o, fromVars[i]);
-                            _toVars[_name] = checkValue(_o, toVars[i], _fromVars[_name], false);
-                        } else {
-                            _toVars[i] = toVars[i];
-                        }
-                    }
-                } else {
-                    for (var i in toVars) {
-                        if ((obj[i] !== undefined)) {
-                            var _o = regValue(obj[i]);
-                            _fromVars[i] = checkValue(_o, fromVars[i]);
-                            _toVars[i] = checkValue(_o, toVars[i], _fromVars[i], false);
-                        } else {
-                            _toVars[i] = toVars[i];
-                        }
-                    }
-                }
-
-                var _tween = new tween(obj, time, _fromVars, _toVars, _isDom);
-                _tweens.push(_tween);
-            });
-
-            if (_tweens.length == 1) {
-                return _tweens[0];
-            } else {
-                return _tweens;
-            }
+        fromTo: function (el, time, fromVars, toVars) {
+            return (time || toVars.delay) ? createTween('fromTo', el, time, fromVars, toVars) : this.set(el, toVars);
         },
 
-        from: function (target, time, fromVars) {
-            checkBezier(fromVars);
-            var _target = getElement(target);
-            var _tweens = [];
-            each(_target, function (index, obj) {
-                var _fromVars = {};
-                var _toVars = {};
-                var _isDom = isDOM(obj);
-                if (_isDom) {
-                    checkJtobj(obj);
-                    for (var i in fromVars) {
-                        var _name = checkPropName(obj, i);
-                        if (_name) {
-                            var _o = regValue(getProp(obj, _name));
-                            _fromVars[_name] = checkValue(_o, fromVars[i], _o, true);
-                            _toVars[_name] = _o;
-                        } else {
-                            _toVars[i] = fromVars[i];
-                        }
-                    }
-                } else {
-                    for (var i in fromVars) {
-                        if ((obj[i] !== undefined)) {
-                            var _o = regValue(obj[i]);
-                            _fromVars[i] = checkValue(_o, fromVars[i], _o, true);
-                            _toVars[i] = _o;
-                        } else {
-                            _toVars[i] = fromVars[i];
-                        }
-                    }
-                }
-
-                var _tween = new tween(obj, time, _fromVars, _toVars, _isDom);
-                _tweens.push(_tween);
-            });
-
-            if (_tweens.length == 1) {
-                return _tweens[0];
-            } else {
-                return _tweens;
-            }
+        from: function (el, time, fromVars) {
+            return (time || fromVars.delay) ? createTween('from', el, time, fromVars, {}) : this.set(el, fromVars);
         },
 
-        to: function (target, time, toVars) {
-            checkBezier(toVars);
-            var _target = getElement(target);
-            var _tweens = [];
-            each(_target, function (index, obj) {
-                var _fromVars = {};
-                var _toVars = {};
-                var _isDom = isDOM(obj);
-                if (_isDom) {
-                    checkJtobj(obj);
-                    for (var i in toVars) {
-                        var _name = checkPropName(obj, i);
-                        if (_name) {
-                            var _o = regValue(getProp(obj, _name));
-                            _fromVars[_name] = _o;
-                            _toVars[_name] = checkValue(_o, toVars[i], _o, false);
-                        } else {
-                            _toVars[i] = toVars[i];
-                        }
-                    }
-                } else {
-                    for (var i in toVars) {
-                        if ((obj[i] !== undefined)) {
-                            var _o = regValue(obj[i]);
-                            _fromVars[i] = _o;
-                            _toVars[i] = checkValue(_o, toVars[i], _o, false);
-                        } else {
-                            _toVars[i] = toVars[i];
-                        }
-                    }
-                }
-
-                var _tween = new tween(obj, time, _fromVars, _toVars, _isDom);
-                _tweens.push(_tween);
-            });
-
-            if (_tweens.length == 1) {
-                return _tweens[0];
-            } else {
-                return _tweens;
-            }
+        to: function (el, time, toVars) {
+            return (time || toVars.delay) ? createTween('to', el, time, {}, toVars) : this.set(el, toVars);
         },
 
-        kill: function (target, toEnd) {
-            var _target = getElement(target);
-            each(_target, function (index, obj) {
+        kill: function (el, toEnd) {
+            var _el = getElement(el);
+            each(_el, function (index, obj) {
                 var _len = tweens.length;
                 for (var i = _len - 1; i >= 0; i--) {
                     var _tween = tweens[i];
-                    if (_tween.target === obj) {
+                    if (_tween.el === obj) {
                         _tween.kill(toEnd);
                     }
                 }
@@ -741,197 +718,99 @@
             }
         },
 
-        play: function (target) {
-            actionProxyTween(target, 'play');
+        play: function (el, time) {
+            actionProxy(el, 'play', time);
         },
 
-        playAll: function () {
-            actionProxyAllTweens('play');
+        playAll: function (time) {
+            actionProxyAll('play', time);
         },
 
-        pause: function (target) {
-            actionProxyTween(target, 'pause');
+        pause: function (el) {
+            actionProxy(el, 'pause');
         },
 
         pauseAll: function () {
-            actionProxyAllTweens('pause');
+            actionProxyAll('pause');
         },
 
-        isTweening: function (target) {
-            var _target = getElement(target);
-            _target = _target[0] || _target;
+        stop: function (el) {
+            actionProxy(el, 'stop');
+        },
+
+        stopAll: function () {
+            actionProxyAll('stop');
+        },
+
+        reverse: function (el, time) {
+            actionProxy(el, 'reverse', time);
+        },
+
+        reverseAll: function (time) {
+            actionProxyAll('reverse', time);
+        },
+
+        seek: function (el, time) {
+            actionProxy(el, 'seek', time);
+        },
+
+        seekAll: function (time) {
+            actionProxyAll('seek', time);
+        },
+
+        setTimeScale: function (el, scale) {
+            actionProxy(el, 'setTimeScale', scale);
+        },
+
+        setTimeScaleAll: function (scale) {
+            actionProxyAll('setTimeScale', scale);
+        },
+
+        isTweening: function (el) {
+            var _el = getElement(el);
+            _el = _el[0] || _el;
             var _len = tweens.length;
             for (var i = _len - 1; i >= 0; i--) {
                 var _tween = tweens[i];
-                if (_tween.target === _target) {
-                    return true;
-                }
+                if (_tween.el === _el) return true;
             }
             return false;
-        }
+        },
+
+        call: function (time, callback, params, isPlaying) {
+            return time ? new tween({}, Math.max(0, time), {}, {
+                onEnd: callback,
+                onEndParams: params,
+                isPlaying: isPlaying
+            }, false) : callback.apply(callback, params);
+        },
 
     });
 
-    function actionProxyTween(target, action) {
-        var _target = getElement(target);
+    function actionProxy(el, action, params) {
+        var _el = getElement(el);
         var _len = tweens.length;
-        each(_target, function (index, obj) {
+        each(_el, function (index, obj) {
             for (var i = _len - 1; i >= 0; i--) {
                 var _tween = tweens[i];
-                if (_tween.target === obj) {
-                    _tween[action]();
+                if (_tween.el === obj) {
+                    _tween[action](params);
                 }
             }
         });
     }
 
-    function actionProxyAllTweens(action) {
+    function actionProxyAll(action, params) {
         var _len = tweens.length;
         for (var i = _len - 1; i >= 0; i--) {
             var _tween = tweens[i];
-            _tween[action]();
-        }
-    }
-
-
-    // --------------------------------------------------------------------call
-    var calls = [];
-
-    function call() {
-        this.initialize.apply(this, arguments);
-    }
-
-    extend(call.prototype, {
-        initialize: function (time, callback, params, isPlaying) {
-            this.delay = time * 1000;
-            this.onEnd = callback || null;
-            this.onEndParams = params || [];
-
-            this.curTime = 0;
-            this.endTime = this.delay;
-            this.isPlaying = isPlaying || true;
-
-            if (this.delay != 0) {
-                this._addSelf();
-            } else {
-                if (this.onEnd) this.onEnd.apply(this, this.onEndParams);
-            }
-
-        },
-
-        _update: function (time) {
-            if (!this.isPlaying) return true;
-
-            this.curTime += time;
-
-            if (this.curTime < this.endTime) return true;
-
-            // if (this.onEnd) this.onEnd.apply(this, this.onEndParams);
-            return false;
-        },
-
-        _addSelf: function () {
-            calls.push(this);
-            if (!isUpdating) {
-                lastTime = JT.now();
-                globalUpdate();
-            }
-        },
-
-        _removeSelf: function () {
-            var i = calls.indexOf(this);
-            if (i !== -1) {
-                calls.splice(i, 1);
-            }
-        },
-
-        play: function () {
-            this.isPlaying = true;
-        },
-
-        pause: function () {
-            this.isPlaying = false;
-        },
-
-        kill: function (toEnd) {
-            this._removeSelf();
-            if (toEnd) {
-                this._toEnd();
-                if (this.onEnd) this.onEnd.apply(this, this.onEndParams);
-            }
-        }
-    });
-
-
-    //---------------------------------------------------------------call 全局方法
-    extend(JT, {
-        call: function (time, callback, params, isPlaying) {
-            return new call(time, callback, params, isPlaying);
-        },
-
-        killCall: function (callback, toEnd) {
-            var _target = callback;
-            var _len = calls.length;
-            each(_target, function (index, obj) {
-                for (var i = _len - 1; i >= 0; i--) {
-                    var _call = calls[i];
-                    if (_call.onEnd === obj) {
-                        _call.kill(toEnd);
-                    }
-                }
-            });
-        },
-
-        killAllCalls: function (toEnd) {
-            var _len = calls.length;
-            for (var i = _len - 1; i >= 0; i--) {
-                var _call = calls[i];
-                _call.kill(toEnd);
-            }
-        },
-
-        playCall: function (callback) {
-            actionProxyCall(callback, 'play');
-        },
-
-        playAllCalls: function () {
-            actionProxyAllCalls('play');
-        },
-
-        pauseCall: function (callback) {
-            actionProxyCall(callback, 'pause');
-        },
-
-        pauseAllCalls: function () {
-            actionProxyAllCalls('pause');
-        }
-
-    });
-
-    function actionProxyCall(callback, action) {
-        var _target = callback;
-        var _len = calls.length;
-        each(_target, function (index, obj) {
-            for (var i = _len - 1; i >= 0; i--) {
-                var _call = calls[i];
-                if (_call.onEnd === obj) {
-                    _call[action]();
-                }
-            }
-        });
-    }
-
-    function actionProxyAllCalls(action) {
-        var _len = calls.length;
-        for (var i = _len - 1; i >= 0; i--) {
-            var _call = calls[i];
-            _call[action]();
+            _tween[action](params);
         }
     }
 
 
     // --------------------------------------------------------------------bezier
-    extend(JT, {
+    Object.assign(JT, {
         path: function (obj) {
             checkBezier(obj);
             var _ease = obj.ease || JT.Linear.None;
@@ -942,7 +821,7 @@
                 _radio = _ease(i / _step);
                 var _o = {};
                 for (var j in obj) {
-                    if (obj[j] instanceof Array) {
+                    if (Array.isArray(obj[j])) {
                         _o[j] = obj.interpolation(obj[j], _radio);
                     }
                 }
@@ -970,13 +849,13 @@
         }
     }
 
-    function sortBezier(target, arr) {
-        for (var i in arr) {
+    function sortBezier(el, arr) {
+        for (var i = 0, l = arr.length; i < l; i++) {
             for (var j in arr[i]) {
-                if (i == 0) {
-                    target[j] = [arr[i][j]];
+                if (i === 0) {
+                    el[j] = [arr[i][j]];
                 } else {
-                    target[j].push(arr[i][j]);
+                    el[j].push(arr[i][j]);
                 }
             }
         }
@@ -1000,18 +879,18 @@
     function Through(v, k) {
         var m = v.length - 1, f = m * k, i = Math.floor(f), fn = Utils.Through;
         if (v[0] === v[m]) {
-            if (k < 0) i = Math.floor(f = m * ( 1 + k ));
-            return fn(v[( i - 1 + m ) % m], v[i], v[( i + 1 ) % m], v[( i + 2 ) % m], f - i);
+            if (k < 0) i = Math.floor(f = m * (1 + k));
+            return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
         } else {
-            if (k < 0) return v[0] - ( fn(v[0], v[0], v[1], v[1], -f) - v[0] );
-            if (k > 1) return v[m] - ( fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m] );
+            if (k < 0) return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+            if (k > 1) return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
             return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
         }
     }
 
     var Utils = {
         Linear: function (p0, p1, t) {
-            return ( p1 - p0 ) * t + p0;
+            return (p1 - p0) * t + p0;
         },
 
         Bernstein: function (n, i) {
@@ -1030,14 +909,14 @@
         })(),
 
         Through: function (p0, p1, p2, p3, t) {
-            var v0 = ( p2 - p0 ) * 0.5, v1 = ( p3 - p1 ) * 0.5, t2 = t * t, t3 = t * t2;
-            return ( 2 * p1 - 2 * p2 + v0 + v1 ) * t3 + ( -3 * p1 + 3 * p2 - 2 * v0 - v1 ) * t2 + v0 * t + p1;
+            var v0 = (p2 - p0) * 0.5, v1 = (p3 - p1) * 0.5, t2 = t * t, t3 = t * t2;
+            return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
         }
     };
 
 
     // --------------------------------------------------------------------缓动选项
-    extend(JT, {
+    Object.assign(JT, {
         Linear: {
             None: function (k) {
                 return k;
@@ -1048,11 +927,11 @@
                 return k * k;
             },
             Out: function (k) {
-                return k * ( 2 - k );
+                return k * (2 - k);
             },
             InOut: function (k) {
-                if (( k *= 2 ) < 1) return 0.5 * k * k;
-                return -0.5 * ( --k * ( k - 2 ) - 1 );
+                if ((k *= 2) < 1) return 0.5 * k * k;
+                return -0.5 * (--k * (k - 2) - 1);
             }
         },
         Cubic: {
@@ -1063,8 +942,8 @@
                 return --k * k * k + 1;
             },
             InOut: function (k) {
-                if (( k *= 2 ) < 1) return 0.5 * k * k * k;
-                return 0.5 * ( ( k -= 2 ) * k * k + 2 );
+                if ((k *= 2) < 1) return 0.5 * k * k * k;
+                return 0.5 * ((k -= 2) * k * k + 2);
             }
         },
         Quart: {
@@ -1072,11 +951,11 @@
                 return k * k * k * k;
             },
             Out: function (k) {
-                return 1 - ( --k * k * k * k );
+                return 1 - (--k * k * k * k);
             },
             InOut: function (k) {
-                if (( k *= 2 ) < 1) return 0.5 * k * k * k * k;
-                return -0.5 * ( ( k -= 2 ) * k * k * k - 2 );
+                if ((k *= 2) < 1) return 0.5 * k * k * k * k;
+                return -0.5 * ((k -= 2) * k * k * k - 2);
             }
         },
         Quint: {
@@ -1087,8 +966,8 @@
                 return --k * k * k * k * k + 1;
             },
             InOut: function (k) {
-                if (( k *= 2 ) < 1) return 0.5 * k * k * k * k * k;
-                return 0.5 * ( ( k -= 2 ) * k * k * k * k + 2 );
+                if ((k *= 2) < 1) return 0.5 * k * k * k * k * k;
+                return 0.5 * ((k -= 2) * k * k * k * k + 2);
             }
         },
         Sine: {
@@ -1099,7 +978,7 @@
                 return Math.sin(k * Math.PI / 2);
             },
             InOut: function (k) {
-                return 0.5 * ( 1 - Math.cos(Math.PI * k) );
+                return 0.5 * (1 - Math.cos(Math.PI * k));
             }
         },
         Expo: {
@@ -1112,8 +991,8 @@
             InOut: function (k) {
                 if (k === 0) return 0;
                 if (k === 1) return 1;
-                if (( k *= 2 ) < 1) return 0.5 * Math.pow(1024, k - 1);
-                return 0.5 * ( -Math.pow(2, -10 * ( k - 1 )) + 2 );
+                if ((k *= 2) < 1) return 0.5 * Math.pow(1024, k - 1);
+                return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
             }
         },
         Circ: {
@@ -1121,11 +1000,11 @@
                 return 1 - Math.sqrt(1 - k * k);
             },
             Out: function (k) {
-                return Math.sqrt(1 - ( --k * k ));
+                return Math.sqrt(1 - (--k * k));
             },
             InOut: function (k) {
-                if (( k *= 2 ) < 1) return -0.5 * ( Math.sqrt(1 - k * k) - 1);
-                return 0.5 * ( Math.sqrt(1 - ( k -= 2) * k) + 1);
+                if ((k *= 2) < 1) return -0.5 * (Math.sqrt(1 - k * k) - 1);
+                return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
             }
         },
         Elastic: {
@@ -1137,8 +1016,8 @@
                     a = 1;
                     s = p / 4;
                 }
-                else s = p * Math.asin(1 / a) / ( 2 * Math.PI );
-                return -( a * Math.pow(2, 10 * ( k -= 1 )) * Math.sin(( k - s ) * ( 2 * Math.PI ) / p) );
+                else s = p * Math.asin(1 / a) / (2 * Math.PI);
+                return -(a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
             },
             Out: function (k) {
                 var s, a = 0.1, p = 0.4;
@@ -1148,8 +1027,8 @@
                     a = 1;
                     s = p / 4;
                 }
-                else s = p * Math.asin(1 / a) / ( 2 * Math.PI );
-                return ( a * Math.pow(2, -10 * k) * Math.sin(( k - s ) * ( 2 * Math.PI ) / p) + 1 );
+                else s = p * Math.asin(1 / a) / (2 * Math.PI);
+                return (a * Math.pow(2, -10 * k) * Math.sin((k - s) * (2 * Math.PI) / p) + 1);
             },
             InOut: function (k) {
                 var s, a = 0.1, p = 0.4;
@@ -1159,24 +1038,24 @@
                     a = 1;
                     s = p / 4;
                 }
-                else s = p * Math.asin(1 / a) / ( 2 * Math.PI );
-                if (( k *= 2 ) < 1) return -0.5 * ( a * Math.pow(2, 10 * ( k -= 1 )) * Math.sin(( k - s ) * ( 2 * Math.PI ) / p) );
-                return a * Math.pow(2, -10 * ( k -= 1 )) * Math.sin(( k - s ) * ( 2 * Math.PI ) / p) * 0.5 + 1;
+                else s = p * Math.asin(1 / a) / (2 * Math.PI);
+                if ((k *= 2) < 1) return -0.5 * (a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
+                return a * Math.pow(2, -10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
             }
         },
         Back: {
             In: function (k) {
                 var s = 1.70158;
-                return k * k * ( ( s + 1 ) * k - s );
+                return k * k * ((s + 1) * k - s);
             },
             Out: function (k) {
                 var s = 1.70158;
-                return --k * k * ( ( s + 1 ) * k + s ) + 1;
+                return --k * k * ((s + 1) * k + s) + 1;
             },
             InOut: function (k) {
                 var s = 1.70158 * 1.525;
-                if (( k *= 2 ) < 1) return 0.5 * ( k * k * ( ( s + 1 ) * k - s ) );
-                return 0.5 * ( ( k -= 2 ) * k * ( ( s + 1 ) * k + s ) + 2 );
+                if ((k *= 2) < 1) return 0.5 * (k * k * ((s + 1) * k - s));
+                return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
             }
         },
         Bounce: {
@@ -1184,14 +1063,14 @@
                 return 1 - JT.Bounce.Out(1 - k);
             },
             Out: function (k) {
-                if (k < ( 1 / 2.75 )) {
+                if (k < (1 / 2.75)) {
                     return 7.5625 * k * k;
-                } else if (k < ( 2 / 2.75 )) {
-                    return 7.5625 * ( k -= ( 1.5 / 2.75 ) ) * k + 0.75;
-                } else if (k < ( 2.5 / 2.75 )) {
-                    return 7.5625 * ( k -= ( 2.25 / 2.75 ) ) * k + 0.9375;
+                } else if (k < (2 / 2.75)) {
+                    return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+                } else if (k < (2.5 / 2.75)) {
+                    return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
                 } else {
-                    return 7.5625 * ( k -= ( 2.625 / 2.75 ) ) * k + 0.984375;
+                    return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
                 }
             },
             InOut: function (k) {
@@ -1201,7 +1080,6 @@
         }
     });
 
-    JT.now = now;
-
     return JT;
-}));
+
+})));
