@@ -61,12 +61,23 @@
         BaseInput.call(this, params);
         this.el.type = 'text';
 
-        if (params.limitLength !== undefined) this.limitLength = params.limitLength;
-        if (params.language !== undefined) this.language = params.language;
+        this.limitLength = params.limitLength || '';
+        this.language = params.language || '';
 
         if (this.limitLength || this.language) {
             var _self = this;
-            this.el.addEventListener('change', function () {
+            var _isComposition = false;
+            this.el.addEventListener('input', function () {
+                if (!_isComposition) {
+                    if (_self.language) _self.checkLanguage();
+                    if (_self.limitLength) _self.checkLimit();
+                }
+            });
+            this.el.addEventListener('compositionstart', function () {
+                _isComposition = true;
+            });
+            this.el.addEventListener('compositionend', function () {
+                _isComposition = false;
                 if (_self.language) _self.checkLanguage();
                 if (_self.limitLength) _self.checkLimit();
             });
@@ -80,7 +91,6 @@
         checkLanguage: function () {
             switch (this.language) {
                 case 'cn':
-                    // console.log(this.el.value.replace(/[^\u4e00-\u9fa5]/ig, ''));
                     this.el.value = this.el.value.replace(/[^\u4e00-\u9fa5]/ig, '');
                     break;
                 case 'en':
