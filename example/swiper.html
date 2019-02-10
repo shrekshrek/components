@@ -23,17 +23,16 @@
 
         #contain {
             position: absolute;
-            width: 1200px;
+            width: 400px;
             height: 700px;
             background: #ff0000;
             font-size: 40px;
         }
 
         p {
-            float: left;
-            width: 400px;
-            height: 100%;
+            position: absolute;
             background: #00ff00;
+            margin: 0px;
         }
     </style>
 </head>
@@ -50,20 +49,21 @@
 <script>
     var swiper = new Swiper({
         el: document.getElementById('main'),
-        drag: document.getElementById('contain'),
-//        isX: true,
+        list: document.getElementById('contain'),
+        direction: 'v',
+        loop: true
     });
 
     var gesture = new Gesturer({
         el: window,
         onTouchStart: function (evt) {
-            swiper.onTouchStart(evt);
+            swiper.touchStart(evt);
         },
         onPressMove: function (evt) {
-            swiper.onTouchMove(evt);
+            swiper.touchMove(evt);
         },
         onTouchEnd: function (evt) {
-            swiper.onTouchEnd(evt);
+            swiper.touchEnd(evt);
         },
     });
     gesture.on();
