@@ -13,8 +13,12 @@
     // 'email','password','tel','text',
 
     // -------------------------------------------------------------------基类
-    var BaseInput = function (params) {
-        this.el = params.el || document.createElement('input');
+    var BaseInput = function (options) {
+        this.el = options.el || document.createElement('input');
+
+        this.onUpdate = options.onUpdate || null;
+        this.onFocusin = options.onFocusin || null;
+        this.onFocusout = options.onFocusout || null;
 
         this.el.style.margin = '0px';
         this.el.style.padding = '0px';
@@ -22,7 +26,7 @@
         this.el.style.border = '0px';
         this.el.style.background = 'transparent';
 
-        this.set(params);
+        this.init(options);
 
         this.reg = /\S/;
     };
@@ -32,57 +36,67 @@
             return this.reg.test(this.el.value);
         },
 
-        set: function (params) {
-            if (params.id !== undefined) this.el.id = params.id;
-            if (params.class !== undefined) this.el.className = params.class;
-            if (params.name !== undefined) this.el.name = params.name;
+        init: function (options) {
+            if (options.id !== undefined) this.el.id = options.id;
+            if (options.class !== undefined) this.el.className = options.class;
+            if (options.name !== undefined) this.el.name = options.name;
 
-            if (params.position !== undefined) this.el.style.position = params.position;
-            if (params.left !== undefined) this.el.style.left = params.left + 'px';
-            if (params.top !== undefined) this.el.style.top = params.top + 'px';
-            if (params.border !== undefined) this.el.style.border = params.border;
-            if (params.background !== undefined) this.el.style.background = params.background;
-            if (params.width !== undefined) this.el.style.width = params.width + 'px';
-            if (params.height !== undefined) this.el.style.height = this.el.style.lineHeight = params.height + 'px';
-            if (params.fontSize !== undefined) this.el.style.fontSize = params.fontSize + 'px';
-            if (params.maxLength !== undefined) this.el.maxLength = params.maxLength;
+            if (options.position !== undefined) this.el.style.position = options.position;
+            if (options.left !== undefined) this.el.style.left = options.left + 'px';
+            if (options.top !== undefined) this.el.style.top = options.top + 'px';
+            if (options.border !== undefined) this.el.style.border = options.border;
+            if (options.background !== undefined) this.el.style.background = options.background;
+            if (options.width !== undefined) this.el.style.width = options.width + 'px';
+            if (options.height !== undefined) this.el.style.height = this.el.style.lineHeight = options.height + 'px';
+            if (options.fontSize !== undefined) this.el.style.fontSize = options.fontSize + 'px';
+            if (options.maxLength !== undefined) this.el.maxLength = options.maxLength;
         },
 
-        value: function () {
-            return this.el.value;
+        val: function () {
+            if (value == undefined) return this.el.value;
+            else this.el.value = value;
         },
 
     });
 
     // -------------------------------------------------------------------text普通文本输入框
-    var TextInput = function (params) {
-        params = params || {};
+    var TextInput = function (options) {
+        options = options || {};
 
-        BaseInput.call(this, params);
+        BaseInput.call(this, options);
         this.el.type = 'text';
 
-        this.limitLength = params.limitLength || '';
-        this.language = params.language || '';
+        this.limitLength = options.limitLength || '';
+        this.language = options.language || '';
 
-        if (this.limitLength || this.language) {
-            var _self = this;
-            var _isComposition = false;
-            this.el.addEventListener('input', function () {
-                if (!_isComposition) {
-                    if (_self.language) _self.checkLanguage();
-                    if (_self.limitLength) _self.checkLimit();
-                }
-            });
-            this.el.addEventListener('compositionstart', function () {
-                _isComposition = true;
-            });
-            this.el.addEventListener('compositionend', function () {
-                _isComposition = false;
-                if (_self.language) _self.checkLanguage();
-                if (_self.limitLength) _self.checkLimit();
-            });
-        }
+        var _isComposition = false;
 
+        this.el.addEventListener('focusin', function () {
+            if (this.onFocusin) this.onFocusin();
+        }.bind(this));
+
+        this.el.addEventListener('focusout', function () {
+            if (this.onFocusout) this.onFocusout();
+        }.bind(this));
+
+        this.el.addEventListener('input', function () {
+            if (!_isComposition) {
+                if (this.language) this.checkLanguage();
+                if (this.limitLength) this.checkLimit();
+                if (this.onUpdate) this.onUpdate();
+            }
+        }.bind(this));
+
+        this.el.addEventListener('compositionstart', function () {
+            _isComposition = true;
+        }.bind(this));
+
+        this.el.addEventListener('compositionend', function () {
+            _isComposition = false;
+            if (this.language) this.checkLanguage();
+            if (this.limitLength) this.checkLimit();
+            if (this.onUpdate) this.onUpdate();
+        }.bind(this));
     };
 
     TextInput.prototype = Object.assign(Object.create(BaseInput.prototype), {
@@ -99,7 +113,7 @@
             }
         },
 
-        checkLength: function () {
+        getLength: function () {
             var _result = this.el.value.match(/[^\x00-\xff]/ig);
             var _cnLength = _result ? _result.length : 0;
             var _length = this.el.value.length + _cnLength;
@@ -107,7 +121,7 @@
         },
 
         checkLimit: function () {
-            var _length = this.checkLength();
+            var _length = this.getLength();
             if (_length > this.limitLength) {
                 this.el.value = this.el.value.substring(0, this.el.value.length - 1);
                 this.checkLimit();
@@ -117,10 +131,10 @@
     });
 
     // -------------------------------------------------------------------mobile手机号输入框
-    var MobileInput = function (params) {
-        params = params || {};
+    var MobileInput = function (options) {
+        options = options || {};
 
-        BaseInput.call(this, params);
+        BaseInput.call(this, options);
         this.el.type = 'tel';
         this.el.maxLength = 11;
 
@@ -132,10 +146,10 @@
     });
 
     // -------------------------------------------------------------------Email邮箱输入框
-    var EmailInput = function (params) {
-        params = params || {};
+    var EmailInput = function (options) {
+        options = options || {};
 
-        BaseInput.call(this, params);
+        BaseInput.call(this, options);
         this.el.type = 'email';
 
         this.reg = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
@@ -146,10 +160,10 @@
     });
 
     // -------------------------------------------------------------------password星型密码输入框
-    var PasswordInput = function (params) {
-        params = params || {};
+    var PasswordInput = function (options) {
+        options = options || {};
 
-        BaseInput.call(this, params);
+        BaseInput.call(this, options);
         this.el.type = 'password';
     };
 
@@ -158,10 +172,10 @@
     });
 
     // -------------------------------------------------------------------date日期输入框
-    var DateInput = function (params) {
-        params = params || {};
+    var DateInput = function (options) {
+        options = options || {};
 
-        BaseInput.call(this, params);
+        BaseInput.call(this, options);
         this.el.type = 'date';
     };
 
@@ -170,8 +184,8 @@
     });
 
     // -------------------------------------------------------------------select下拉选单
-    var ComboBox = function (params) {
-        this.el = params.el || document.createElement('div');
+    var ComboBox = function (options) {
+        this.el = options.el || document.createElement('div');
         this.el.style.position = 'absolute';
         this.el.style.background = 'transparent';
 
@@ -191,43 +205,42 @@
         this.selectEl.style.top = '0px';
         this.el.appendChild(this.selectEl);
 
-        var _self = this;
         this.selectEl.addEventListener('change', function (evt) {
-            _self.textEl.innerText = _self.selectEl.value;
-            _self.onChange(evt);
-        });
+            this.textEl.innerText = this.selectEl.value;
+            this.onChange(evt);
+        }.bind(this));
 
-        this.set(params);
+        this.set(options);
     };
 
     Object.assign(ComboBox.prototype, {
-        set: function (params) {
-            if (params.id !== undefined) this.el.id = params.id;
-            if (params.class !== undefined) this.el.className = params.class;
+        set: function (options) {
+            if (options.id !== undefined) this.el.id = options.id;
+            if (options.class !== undefined) this.el.className = options.class;
 
-            if (params.position !== undefined) this.el.style.position = params.position;
-            if (params.left !== undefined) this.el.style.left = params.left + 'px';
-            if (params.top !== undefined) this.el.style.top = params.top + 'px';
-            if (params.border !== undefined) this.textEl.style.border = params.border;
-            if (params.background !== undefined) this.textEl.style.background = params.background;
-            if (params.width !== undefined) this.textEl.style.width = this.selectEl.style.width = params.width + 'px';
-            if (params.height !== undefined) this.textEl.style.height = this.el.style.lineHeight = this.selectEl.style.height = params.height + 'px';
+            if (options.position !== undefined) this.el.style.position = options.position;
+            if (options.left !== undefined) this.el.style.left = options.left + 'px';
+            if (options.top !== undefined) this.el.style.top = options.top + 'px';
+            if (options.border !== undefined) this.textEl.style.border = options.border;
+            if (options.background !== undefined) this.textEl.style.background = options.background;
+            if (options.width !== undefined) this.textEl.style.width = this.selectEl.style.width = options.width + 'px';
+            if (options.height !== undefined) this.textEl.style.height = this.el.style.lineHeight = this.selectEl.style.height = options.height + 'px';
 
-            if (params.fontSize !== undefined) this.el.style.fontSize = params.fontSize + 'px';
-            if (params.onChange !== undefined) this.onChange = params.onChange;
+            if (options.fontSize !== undefined) this.el.style.fontSize = options.fontSize + 'px';
+            if (options.onChange !== undefined) this.onChange = options.onChange;
 
             this.selectEl.style.opacity = 0;
 
-            if (params.data) {
+            if (options.data) {
                 var _html = '';
-                for (var i = 0, l = params.data.length; i < l; i++) {
-                    _html += '<option value ="' + params.data[i] + '">' + params.data[i] + '</option>';
+                for (var i = 0, l = options.data.length; i < l; i++) {
+                    _html += '<option value ="' + options.data[i] + '">' + options.data[i] + '</option>';
                 }
                 this.selectEl.innerHTML = _html;
             }
         },
 
-        value: function () {
+        val: function () {
             return this.selectEl.value;
         },
 
