@@ -14,12 +14,14 @@
         this.el = config.el;
         this.color = config.color;
         this.type = config.type || 'jpeg';
-        this.quality = config.quality || 0.7;
+        this.quality = config.quality || 0.8;
 
         this.ctx = this.el.getContext('2d');
         this.ctx.imageSmoothingEnabled = true;
-        this.width = this.el.width;
-        this.height = this.el.height;
+        this.width = config.width || this.el.width;
+        this.height = config.height || this.el.height;
+        this.el.width = this.width;
+        this.el.height = this.height;
         this.editData = {x: this.width / 2, y: this.height / 2, r: 0, s: 1};
 
         this.editImg = new Image();
@@ -30,9 +32,9 @@
     };
 
     ImgEditor.prototype = {
-        size: function (rect) {
-            this.width = rect.width;
-            this.height = rect.height;
+        resize: function (width, height) {
+            this.width = width;
+            this.height = height;
             this.el.width = this.width;
             this.el.height = this.height;
             this.reset();
@@ -65,18 +67,18 @@
             this.ctx.restore();
         },
 
-        onMove: function (evt) {
+        move: function (evt) {
             this.editData.x = Math.max(-this.width * 0.5, Math.min(this.width * 1.5, this.editData.x + evt.deltaX * 1));
             this.editData.y = Math.max(0, Math.min(this.height, this.editData.y + evt.deltaY * 1));
             this.update();
         },
 
-        onPinch: function (evt) {
+        pinch: function (evt) {
             this.editData.s = Math.max(0.5, Math.min(3, this.editData.s + evt.deltaLen * 0.005));
             this.update();
         },
 
-        onRotate: function (evt) {
+        rotate: function (evt) {
             this.editData.r += evt.angle * 1;
             this.editData.r %= 360;
             this.update();

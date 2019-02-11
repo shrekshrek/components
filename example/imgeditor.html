@@ -25,7 +25,7 @@
             position: absolute;
         }
 
-        #tips{
+        #tips {
             position: absolute;
             font-size: 30px;
             color: #ff0000;
@@ -45,23 +45,23 @@
 
     var gesture = new Gesturer({
         el: window,
-        onPressMove: function(evt){
-            imgeditor.onMove(evt);
+        onPressMove: function (evt) {
+            imgeditor.move(evt);
         },
-        onPinch: function(evt){
+        onPinch: function (evt) {
             tip(evt.scale);
-            imgeditor.onPinch(evt);
+            imgeditor.pinch(evt);
         },
-        onRotate: function(evt){
+        onRotate: function (evt) {
 //            tip(evt.angle);
-            imgeditor.onRotate(evt);
+            imgeditor.rotate(evt);
         },
     });
     gesture.on();
 
     imgeditor.setImg('images/p1.jpg');
 
-    function tip(txt){
+    function tip(txt) {
         document.getElementById('tips').innerHTML = txt;
     }
 
