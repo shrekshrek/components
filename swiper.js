@@ -16,7 +16,7 @@
 
     var Swiper = function (config) {
         this.el = config.el;
-        this.list = config.list || this.el.querySelector('.list');
+        this.list = config.list || this.el.children[0];
         this.direction = config.direction == 'v' ? 'v' : 'h';
         this.loop = config.loop || false;
         this.width = config.width || parseFloat(JT.get(this.el, 'width'));
@@ -27,36 +27,35 @@
         this.pageId = 0;
         this.pageMax = this.list.children.length;
 
-        this.size(this.width, this.height);
-        JT.set(this.el, {overflow: 'hidden'});
-
         if (this.loop) {
             var _first = this.list.children[0].cloneNode(true);
             var _last = this.list.children[this.pageMax - 1].cloneNode(true);
             this.list.appendChild(_first);
             this.list.insertBefore(_last, this.list.firstChild);
-            if (this.direction == 'h') {
-                JT.set(_first, {left: this.width * this.pageMax});
-                JT.set(_last, {left: -this.width});
-            } else {
-                JT.set(_first, {top: this.height * this.pageMax});
-                JT.set(_last, {top: -this.height});
-            }
         }
 
+        this.resize(this.width, this.height);
         this.reset();
     };
 
     Swiper.prototype = {
-        size: function (width, height) {
+        resize: function (width, height) {
             this.width = width;
             this.height = height;
             JT.set(this.el, {width: width, height: height});
 
-            for (var i = 0; i < this.pageMax; i++) {
+            for (var i = 0, l = this.list.children.length; i < l; i++) {
                 var _item = this.list.children[i];
-                if (this.direction == 'h') JT.set(_item, {width: width, height: height, left: i * width});
-                else JT.set(_item, {width: width, height: height, top: i * height});
+                if (this.direction == 'h') JT.set(_item, {
+                    width: width,
+                    height: height,
+                    left: (this.loop ? (i - 1) : i) * width
+                });
+                else JT.set(_item, {
+                    width: width,
+                    height: height,
+                    top: (this.loop ? (i - 1) : i) * height
+                });
             }
 
             if (this.direction == 'h') {

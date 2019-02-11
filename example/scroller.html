@@ -91,21 +91,21 @@
 <script>
     var scroller = new Scroller({
         el: document.getElementById('main'),
-        drag: document.getElementById('contain'),
-        xflow: true,
-//        yflow: false,
+        target: document.getElementById('contain'),
+        // xflow: true,
+        // yflow: false,
     });
 
     var gesture = new Gesturer({
         el: window,
         onTouchStart: function (evt) {
-            scroller.onTouchStart(evt);
+            scroller.touchStart(evt);
         },
         onPressMove: function (evt) {
-            scroller.onTouchMove(evt);
+            scroller.touchMove(evt);
         },
         onTouchEnd: function (evt) {
-            scroller.onTouchEnd(evt);
+            scroller.touchEnd(evt);
         },
     });
     gesture.on();

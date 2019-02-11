@@ -14,23 +14,21 @@
 }(this, (function (JT) {
     'use strict';
 
-    var Controller = function (options) {
-        var empty = function () {
-        };
-        this.onInit = options.onInit || empty;
-        this.onUpdate = options.onUpdate || empty;
-        this.init.call(this, options.range || 0, options.length || 0);
+    var Slider = function (options) {
+        this.onInit = options.onInit || null;
+        this.onUpdate = options.onUpdate || null;
+        this.init(options.range || 0, options.length || 0);
     };
 
-    Object.assign(Controller.prototype, {
+    Object.assign(Slider.prototype, {
         init: function (range, length) {
             this.delta = 0;
             this.value = 0;
             this.range = range;
-            this.length = Math.max(length, range);
+            this.length = length;
             this.max = Math.max(this.range - this.length, 0);
             this.min = Math.min(this.range - this.length, 0);
-            this.onInit();
+            if (this.onInit) this.onInit();
         },
 
         cancelEase: function () {
@@ -53,20 +51,18 @@
         },
 
         move: function (delta) {
-            var _self = this;
-
             if (this.value > this.max || this.value < this.min) {
                 this.value += delta * 0.4;
             } else {
                 this.value += delta;
             }
-            this.onUpdate();
+            if (this.onUpdate) this.onUpdate();
             this.delta = delta;
 
             this.cancelMove();
             this.moveTimeout = setTimeout(function () {
-                _self.delta = 0;
-            }, 100);
+                this.delta = 0;
+            }.bind(this), 50);
         },
 
         end: function () {
@@ -76,20 +72,18 @@
 
         seek: function (num) {
             this.value = num;
-            this.onUpdate();
+            if (this.onUpdate) this.onUpdate();
         },
 
         easeTo: function () {
-            var _self = this;
-
             this.calcDelta();
             this.value += this.delta;
-            this.onUpdate();
+            if (this.onUpdate) this.onUpdate();
 
             if (this.value > this.max || this.value < this.min || Math.abs(this.delta) > 0.1) {
                 this.easeTimeout = requestAnimationFrame(function () {
-                    _self.easeTo();
-                });
+                    this.easeTo();
+                }.bind(this));
             }
         },
 
@@ -108,47 +102,61 @@
 
     var Scroller = function (config) {
         this.el = config.el;
-        this.drag = config.drag || this.el.querySelector('.contain');
-        this.bar = config.bar;
-        this.barDrag = this.bar ? this.bar.children[0] : undefined;
-        this.xflow = config.xflow || false;
-        this.yflow = config.yflow || true;
+        this.target = config.target || this.el.children[0];
+        this.yflow = config.yflow !== undefined ? config.yflow : true;
+        this.yBar = config.ybar;
+        this.yBarTarget = this.yBar ? this.yBar.children[0] : undefined;
+        this.xflow = config.xflow !== undefined ? config.xflow : false;
+        this.xBar = config.xbar;
+        this.xBarTarget = this.xBar ? this.xBar.children[0] : undefined;
 
         var _self = this;
 
         if (this.xflow) {
-            this.xctrl = new Controller({
-                range: parseFloat(JT.get(this.el, 'width')),
-                length: parseFloat(JT.get(this.drag, 'width')),
-                onInit: function () {
+            if (this.xBarTarget) {
+                this.barW = parseFloat(JT.get(this.xBar, 'width'));
+                this.barTargetW = 0;
+            }
 
+            this.xctrl = new Slider({
+                range: parseFloat(JT.get(this.el, 'width')),
+                length: parseFloat(JT.get(this.target, 'width')),
+                onInit: function () {
+                    if (_self.xBarTarget) {
+                        _self.barTargetW = this.range / this.length * this.barW;
+                        JT.set(_self.xBarTarget, {width: _self.barTargetW});
+                    }
                 },
                 onUpdate: function () {
-                    JT.set(_self.drag, {x: this.value});
+                    JT.set(_self.target, {x: this.value});
+                    if (_self.xBarTarget) {
+                        var _x = this.value / (this.length - this.range) * (_self.barTargetW - _self.barW);
+                        JT.set(_self.xBarTarget, {x: _x});
+                    }
                 }
             });
         }
 
         if (this.yflow) {
-            if (this.barDrag) {
-                this.barH = parseFloat(JT.get(this.bar, 'height'));
-                this.barDragH = 0;
+            if (this.yBarTarget) {
+                this.barH = parseFloat(JT.get(this.yBar, 'height'));
+                this.barTargetH = 0;
             }
 
-            this.yctrl = new Controller({
+            this.yctrl = new Slider({
                 range: parseFloat(JT.get(this.el, 'height')),
-                length: parseFloat(JT.get(this.drag, 'height')),
+                length: parseFloat(JT.get(this.target, 'height')),
                 onInit: function () {
-                    if (_self.barDrag) {
-                        _self.barDragH = this.range / this.length * this.barH;
-                        JT.set(_self.barDrag, {height: _self.barDragH});
+                    if (_self.yBarTarget) {
+                        _self.barTargetH = this.range / this.length * this.barH;
+                        JT.set(_self.yBarTarget, {height: _self.barTargetH});
                     }
                 },
                 onUpdate: function () {
-                    JT.set(_self.drag, {y: this.value});
-                    if (_self.barDrag) {
-                        var _y = this.value / (this.length - this.range) * (_self.barDragH - _self.barH);
-                        JT.set(_self.barDrag, {y: _y});
+                    JT.set(_self.target, {y: this.value});
+                    if (_self.yBarTarget) {
+                        var _y = this.value / (this.length - this.range) * (_self.barTargetH - _self.barH);
+                        JT.set(_self.yBarTarget, {y: _y});
                     }
                 }
             });
@@ -157,12 +165,12 @@
     };
 
     Object.assign(Scroller.prototype, {
-        size: function (rect) {
-            JT.set(this.el, {width: rect.width});
-            JT.set(this.el, {height: rect.height});
+        resize: function (width, height) {
+            JT.set(this.el, {width: width});
+            JT.set(this.el, {height: height});
 
-            if (this.xflow) this.xctrl.init(rect.width, this.xctrl.length);
-            if (this.yflow) this.yctrl.init(rect.height, this.yctrl.length);
+            if (this.xflow) this.xctrl.init(width, parseFloat(JT.get(this.target, 'width')));
+            if (this.yflow) this.yctrl.init(height, parseFloat(JT.get(this.target, 'height')));
         },
 
         reset: function () {
@@ -170,21 +178,20 @@
             if (this.yflow) this.yctrl.seek(0);
         },
 
-        onTouchStart: function () {
+        touchStart: function () {
             if (this.xflow) this.xctrl.start();
             if (this.yflow) this.yctrl.start();
         },
 
-        onTouchMove: function (evt) {
+        touchMove: function (evt) {
             if (this.xflow) this.xctrl.move(evt.deltaX);
             if (this.yflow) this.yctrl.move(evt.deltaY);
         },
 
-        onTouchEnd: function () {
+        touchEnd: function () {
             if (this.xflow) this.xctrl.end();
             if (this.yflow) this.yctrl.end();
-        },
-
+        }
     });
 
     return Scroller;
