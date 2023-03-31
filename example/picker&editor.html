@@ -3,47 +3,38 @@
 <head>
     <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>imgeditor</title>
+    <title>imgpicker</title>
     <meta name="description" content=""/>
     <meta name="viewport" content="width=640, target-densitydpi=device-dpi, user-scalable=no"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
 
-    <script src="js/jstween.js"></script>
+    <script src="../imgpicker.js"></script>
     <script src="../gesturer.js"></script>
     <script src="../imgeditor.js"></script>
 
-    <style>
-        #main {
-            position: absolute;
-            width: 400px;
-            height: 800px;
-            background: #0000ff;
-            overflow: hidden;
-        }
-
-        #canvas {
-            position: absolute;
-        }
-
-        #tips {
-            position: absolute;
-            font-size: 30px;
-            color: #ff0000;
-        }
-    </style>
 </head>
 
+
 <body>
+<button id="btn">上传图片</button>
 <canvas id="canvas" width="400px" height="300px"></canvas>
-<div id="tips"></div>
 
 <script>
+    var selecter = new ImgPicker({color:'#ff0000'});
+    selecter.handler = function(data){
+        imgeditor.setImg(data.img);
+    };
+
+    document.getElementById('btn').addEventListener('click', function(){
+        selecter.select();
+    });
+
     var imgeditor = new ImgEditor({
         el: document.getElementById('canvas'),
         color: '#ff0000'
     });
 
-    var gesturer = new Gesturer({
+    var gesture = new Gesturer({
         el: window,
         onPressMove: function (evt) {
             imgeditor.move(evt);
@@ -57,17 +48,7 @@
             imgeditor.rotate(evt);
         },
     });
-    gesturer.on();
-
-    imgeditor.setImg('images/p1.jpg');
-
-    function tip(txt) {
-        document.getElementById('tips').innerHTML = txt;
-    }
-
-    // document.addEventListener('touchmove', function (event) {
-    //     event.preventDefault();
-    // });
+    gesture.on();
 
 </script>
 

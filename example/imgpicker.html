@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>imgpicker</title>
+    <meta name="description" content=""/>
+    <meta name="viewport" content="width=640, target-densitydpi=device-dpi, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+    <script src="../imgpicker.js"></script>
+
+    <style>
+        #btn{
+            width:200px;
+            height:100px;
+            background: #ff0000;
+        }
+    </style>
+</head>
+
+
+<body>
+<div id="btn"></div>
+<img id="show" src=""/>
+
+<script>
+    var selecter = new ImgPicker({color:'#ff0000'});
+    selecter.handler = function(data){
+        document.getElementById('show').src = data.img;
+    };
+    document.getElementById('btn').addEventListener('click', function(){
+        selecter.select();
+    });
+
+</script>
+
+</body>
+</html>
