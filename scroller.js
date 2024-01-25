@@ -67,6 +67,7 @@
     start: function (pos) {
       this.cancelEase();
       this.lastTime = Date.now()
+      this.deltaTime = 0;
       this.lastPos = pos;
       this.delta = 0;
     },
