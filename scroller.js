@@ -32,6 +32,7 @@
       this.length = length;
       this.max = Math.max(this.range - this.length, 0);
       this.min = Math.min(this.range - this.length, 0);
+      this.easeTimeout = null;
       if (this.onInit) this.onInit();
     },
 
@@ -54,9 +55,7 @@
       this.delta = pos - this.lastPos;
       this.lastPos = pos;
 
-      if (this.delta === 0 && this.deltaTime < 15) return;
-
-      this.velocity = this.delta / this.deltaTime;
+      if (this.deltaTime !== 0) this.velocity = this.delta / this.deltaTime;
 
       if (this.value > this.max || this.value < this.min) this.value += this.delta * 0.4;
       else this.value += this.delta;
@@ -77,13 +76,11 @@
     },
 
     end: function (pos) {
-      this.updateMove(pos)
+      var _deltaTime = Date.now() - this.lastTime;
 
-      if (this.velocity === 0 && this.value <= this.max && this.value >= this.min) return;
+      if ((_deltaTime > 50 || this.velocity === 0) && this.value <= this.max && this.value >= this.min) return;
 
-      this.easeTimeout = requestAnimationFrame(function () {
-        this.easeTo();
-      }.bind(this));
+      this.easeTimeout = requestAnimationFrame(this.easeTo.bind(this));
     },
 
     seek: function (num) {
@@ -96,11 +93,9 @@
       this.value += this.delta;
       if (this.onUpdate) this.onUpdate();
 
-      if (this.value > this.max || this.value < this.min || Math.abs(this.delta) > 0.1) {
-        this.easeTimeout = requestAnimationFrame(function () {
-          this.easeTo();
-        }.bind(this));
-      }
+      if (this.value <= this.max && this.value >= this.min && Math.abs(this.delta) <= 0.1) return;
+
+      this.easeTimeout = requestAnimationFrame(this.easeTo.bind(this));
     },
 
     calcDelta: function () {
